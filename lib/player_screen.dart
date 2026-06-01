@@ -13,7 +13,6 @@ class PlayerScreen extends StatefulWidget {
 
 class _PlayerScreenState extends State<PlayerScreen> {
   bool _isShuffleEnabled = false;
-  bool _isLiked = false;
 
   String _getArtistPicture(String artistName, String fallbackImageUrl) {
     final String cleanArtist = artistName.toLowerCase().replaceAll(' ', '').replaceAll('.', '');
@@ -129,24 +128,28 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               letterSpacing: 0.5,
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isLiked = !_isLiked;
-                              });
+                          ValueListenableBuilder<List<Map<String, dynamic>>>(
+                            valueListenable: AudioService().likedSongsNotifier,
+                            builder: (context, likedSongs, child) {
+                              final bool isLiked = AudioService().isSongLiked(song);
+                              return GestureDetector(
+                                onTap: () {
+                                  AudioService().toggleLikeSong(song);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withValues(alpha: 0.08),
+                                  ),
+                                  child: Icon(
+                                    isLiked ? Icons.favorite : Icons.favorite_border,
+                                    color: isLiked ? Colors.redAccent : Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              );
                             },
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.08),
-                              ),
-                              child: Icon(
-                                _isLiked ? Icons.favorite : Icons.favorite_border,
-                                color: _isLiked ? Colors.redAccent : Colors.white,
-                                size: 20,
-                              ),
-                            ),
                           ),
                         ],
                       ),

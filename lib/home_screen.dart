@@ -1,8 +1,15 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart';
 import 'services/audio_service.dart';
 import 'player_screen.dart';
@@ -18,28 +25,114 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
-
   int _currentIndex = 0;
+  String _searchQuery = '';
 
-  // Custom navigation items matching the mockup (Home, Search, Create, AI Suggestion)
+  // Custom navigation items matching the mockup (Home, Search, Create, Vibe Stats)
   final List<Map<String, dynamic>> _navItems = const [
     {'label': 'Home', 'icon': FeatherIcons.home},
     {'label': 'Search', 'icon': FeatherIcons.search},
     {'label': 'Create', 'icon': FeatherIcons.plusSquare},
-    {'label': 'AI Suggestion', 'icon': Icons.auto_awesome_outlined},
+    {'label': 'Vibe Stats', 'icon': Icons.equalizer_rounded},
   ];
 
   // User playlists collection for the Create tab
   final List<Map<String, dynamic>> _userPlaylists = [];
 
-  // AI Suggestion states
-  bool _isAiGenerating = false;
-  String _selectedAiMood = 'Focused';
-  List<String> _generatedAiTracks = const [];
+  // Weekly stats play counts for Vibe Stats heatmap
+  Map<String, int> _weeklyPlayStats = {
+    'Mon': 0,
+    'Tue': 0,
+    'Wed': 0,
+    'Thu': 0,
+    'Fri': 0,
+    'Sat': 0,
+    'Sun': 0,
+  };
+
+  // Detailed day-period heatmap play counts
+  Map<String, int> _heatmapPlayStats = {};
+
+  String? _profileImagePath;
+
+  Future<void> _loadProfileImage() async {
+    try {
+      if (kIsWeb) return; // File system not supported on web
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/profile_info.json');
+      if (await file.exists()) {
+        final decoded = json.decode(await file.readAsString());
+        if (decoded is Map && decoded.containsKey('profileImagePath')) {
+          setState(() {
+            _profileImagePath = decoded['profileImagePath'];
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading profile image path: $e");
+    }
+  }
+
+  Widget _buildProfileAvatar({double radius = 15, double iconSize = 14}) {
+    ImageProvider? provider;
+    if (_profileImagePath != null && _profileImagePath!.isNotEmpty) {
+      if (kIsWeb ||
+          _profileImagePath!.startsWith('http') ||
+          _profileImagePath!.startsWith('blob:')) {
+        provider = NetworkImage(_profileImagePath!);
+      } else {
+        provider = FileImage(File(_profileImagePath!));
+      }
+    } else {
+      // Check firebase photoUrl
+      final User? currentUser = Firebase.apps.isNotEmpty
+          ? FirebaseAuth.instance.currentUser
+          : null;
+      if (currentUser?.photoURL != null && currentUser!.photoURL!.isNotEmpty) {
+        final String photoUrl = currentUser.photoURL!;
+        if (photoUrl.startsWith('http') || photoUrl.startsWith('blob:')) {
+          provider = NetworkImage(photoUrl);
+        } else if (!kIsWeb) {
+          provider = FileImage(File(photoUrl));
+        }
+      }
+    }
+
+    if (provider != null) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundImage: provider,
+        backgroundColor: const Color(0xFF1E1E24),
+      );
+    }
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFF1E1E24),
+      child: Icon(FeatherIcons.user, color: Colors.white, size: iconSize),
+    );
+  }
 
   late PageController _recentlyPlayedController;
   double _currentPage = 1.0;
+
+  // Track genre play counts for dynamic Daily Mix generation
+  final Map<String, int> _genrePlayCounts = {
+    'Melody / Romance': 5,
+    'Kuthu / Dance': 4,
+    'Lofi / Chill': 3,
+    'Classical / Instrumental': 2,
+    'SAD': 1,
+  };
+
+  List<Map<String, dynamic>> get _topGenres {
+    final sorted = List<Map<String, dynamic>>.from(_genreCards);
+    sorted.sort((a, b) {
+      final countA = _genrePlayCounts[a['genre']] ?? 0;
+      final countB = _genrePlayCounts[b['genre']] ?? 0;
+      return countB.compareTo(countA);
+    });
+    return sorted.take(4).toList();
+  }
 
   final List<Map<String, dynamic>> _genreCards = const [
     {
@@ -73,7 +166,8 @@ class _HomeScreenState extends State<HomeScreen> {
         end: Alignment.bottomRight,
       ),
       'glow': Color(0xFF8CA6FC),
-      'image': 'https://i.pinimg.com/736x/c5/67/67/c567677eaed5443a17065f50a55e7c38.jpg',
+      'image':
+          'https://i.pinimg.com/736x/c5/67/67/c567677eaed5443a17065f50a55e7c38.jpg',
     },
     {
       'genre': 'Classical / Instrumental',
@@ -95,7 +189,8 @@ class _HomeScreenState extends State<HomeScreen> {
         end: Alignment.bottomRight,
       ),
       'glow': Color(0xFFD4AF37),
-      'image': 'https://i.pinimg.com/736x/31/3d/37/313d37415bcc86057d6042795c8be010.jpg',
+      'image':
+          'https://i.pinimg.com/736x/31/3d/37/313d37415bcc86057d6042795c8be010.jpg',
     },
   ];
 
@@ -354,58 +449,35 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoadingSongs = true;
 
   final List<Map<String, String>> _artists = const [
-    {
-      'name': 'A.R. Rahman',
-      'image': 'assets/ar_rahman.png',
-    },
-    {
-      'name': 'Anirudh',
-      'image': 'assets/anirudh.jpg',
-    },
-    {
-      'name': 'Yuvan Sankar Raja',
-      'image': 'assets/yuvan.jpg',
-    },
+    {'name': 'A.R. Rahman', 'image': 'assets/ar_rahman.png'},
+    {'name': 'Anirudh', 'image': 'assets/anirudh.jpg'},
+    {'name': 'Yuvan Sankar Raja', 'image': 'assets/yuvan.jpg'},
     {
       'name': 'Deva',
       'image':
           'https://i.pinimg.com/1200x/ed/ae/19/edae1927b2094577b713a011432c2856.jpg',
     },
-    {
-      'name': 'Hip Hop Aadhi',
-      'image': 'assets/hiphop_tamizha.png',
-    },
-    {
-      'name': 'GV Prakash Kumar',
-      'image': 'assets/gv_prakash.jpg',
-    },
-    {
-      'name': 'Sai Abhyankkar',
-      'image': 'assets/sai_abhyankkar.png',
-    },
-    {
-      'name': 'Srikanth Deva',
-      'image': 'assets/srikanth_deva.png',
-    },
-    {
-      'name': 'Vijay Antony',
-      'image': 'assets/vijay_antony.png',
-    },
-    {
-      'name': 'Harris Jayaraj',
-      'image': 'assets/harris_jayaraj.png',
-    },
+    {'name': 'Hip Hop Aadhi', 'image': 'assets/hiphop_tamizha.png'},
+    {'name': 'GV Prakash Kumar', 'image': 'assets/gv_prakash.jpg'},
+    {'name': 'Sai Abhyankkar', 'image': 'assets/sai_abhyankkar.png'},
+    {'name': 'Srikanth Deva', 'image': 'assets/srikanth_deva.png'},
+    {'name': 'Vijay Antony', 'image': 'assets/vijay_antony.png'},
+    {'name': 'Harris Jayaraj', 'image': 'assets/harris_jayaraj.png'},
   ];
 
   String _getArtistPicture(String artistName, String fallbackImageUrl) {
-    final String cleanArtist = artistName.toLowerCase().replaceAll(' ', '').replaceAll('.', '');
-    
+    final String cleanArtist = artistName
+        .toLowerCase()
+        .replaceAll(' ', '')
+        .replaceAll('.', '');
+
     final Map<String, String> artistImages = {
       'arrahman': 'assets/ar_rahman.png',
       'anirudh': 'assets/anirudh.jpg',
       'yuvansankar': 'assets/yuvan.jpg',
       'yuvanshankar': 'assets/yuvan.jpg',
-      'deva': 'https://i.pinimg.com/1200x/ed/ae/19/edae1927b2094577b713a011432c2856.jpg',
+      'deva':
+          'https://i.pinimg.com/1200x/ed/ae/19/edae1927b2094577b713a011432c2856.jpg',
       'hiphopaadhi': 'assets/hiphop_tamizha.png',
       'hiphop': 'assets/hiphop_tamizha.png',
       'gvprakash': 'assets/gv_prakash.jpg',
@@ -431,8 +503,8 @@ class _HomeScreenState extends State<HomeScreen> {
   ImageProvider _getSongImageProvider(Map<String, dynamic> song) {
     final String? img = song['img'];
     final String artist = song['artist'] ?? '';
-    final String imagePath = (img != null && img.isNotEmpty) 
-        ? img 
+    final String imagePath = (img != null && img.isNotEmpty)
+        ? img
         : _getArtistPicture(artist, '');
 
     if (imagePath.startsWith('assets/')) {
@@ -445,7 +517,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (path.startsWith('assets/')) {
       return AssetImage(path);
     }
-    return CachedNetworkImageProvider(path);
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return CachedNetworkImageProvider(path);
+    }
+    return FileImage(File(path));
   }
 
   void _showMagicOutcomeDialog({
@@ -557,7 +632,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 50,
                   child: CircularProgressIndicator(
                     strokeWidth: 3.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE5B3B3)),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFFE5B3B3),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -572,10 +649,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Reading your musical stars...',
-                  style: GoogleFonts.inter(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
@@ -595,10 +669,11 @@ class _HomeScreenState extends State<HomeScreen> {
         final shuffled = List<Map<String, dynamic>>.from(_allSongs)..shuffle();
         final song = shuffled.first;
         AudioService().playSong(song, playlistContext: _allSongs);
-        
+
         _showMagicOutcomeDialog(
           title: "Instant Magic Play! 📻",
-          message: "Fate selected the hit track:\n\"${song['title']}\" by ${song['artist']}",
+          message:
+              "Fate selected the hit track:\n\"${song['title']}\" by ${song['artist']}",
           actionLabel: "OPEN PLAYER",
           onAction: () {
             Navigator.of(context).push(
@@ -610,36 +685,56 @@ class _HomeScreenState extends State<HomeScreen> {
         // Outcome 2: Open curated playlist
         final bool pickArtist = DateTime.now().microsecondsSinceEpoch % 2 == 0;
         if (pickArtist && _artists.isNotEmpty) {
-          final shuffledArtists = List<Map<String, String>>.from(_artists)..shuffle();
+          final shuffledArtists = List<Map<String, String>>.from(_artists)
+            ..shuffle();
           final randomArtist = shuffledArtists.first;
           _showArtistSongs(randomArtist['name']!, randomArtist['image']!);
-          _showMagicSnackbar("✨ Magic selected: Curated playlist for ${randomArtist['name']}!");
+          _showMagicSnackbar(
+            "✨ Magic selected: Curated playlist for ${randomArtist['name']}!",
+          );
         } else {
-          final shuffledGenres = List<Map<String, dynamic>>.from(_genreCards)..shuffle();
+          final shuffledGenres = List<Map<String, dynamic>>.from(_genreCards)
+            ..shuffle();
           final randomGenre = shuffledGenres.first;
-          _showGenreSongs(randomGenre['genre']!, randomGenre['label']!, randomGenre['gradient'] as Gradient);
-          _showMagicSnackbar("✨ Magic selected: Explore ${randomGenre['label']} Hits!");
+          _showGenreSongs(
+            randomGenre['genre']!,
+            randomGenre['label']!,
+            randomGenre['gradient'] as Gradient,
+          );
+          _showMagicSnackbar(
+            "✨ Magic selected: Explore ${randomGenre['label']} Hits!",
+          );
         }
       } else if (fateIndex == 2 && _artists.isNotEmpty) {
         // Outcome 3: Start Artist Radio
-        final shuffledArtists = List<Map<String, String>>.from(_artists)..shuffle();
+        final shuffledArtists = List<Map<String, String>>.from(_artists)
+          ..shuffle();
         final artist = shuffledArtists.first;
         final String artistName = artist['name']!;
-        
+
         final artistSongs = _allSongs.where((song) {
-          final songArtist = (song['artist']?.toString() ?? '').toLowerCase().replaceAll(' ', '').replaceAll('.', '');
-          final queryArtist = artistName.toLowerCase().replaceAll(' ', '').replaceAll('.', '');
-          return songArtist.contains(queryArtist) || queryArtist.contains(songArtist);
+          final songArtist = (song['artist']?.toString() ?? '')
+              .toLowerCase()
+              .replaceAll(' ', '')
+              .replaceAll('.', '');
+          final queryArtist = artistName
+              .toLowerCase()
+              .replaceAll(' ', '')
+              .replaceAll('.', '');
+          return songArtist.contains(queryArtist) ||
+              queryArtist.contains(songArtist);
         }).toList();
 
         if (artistSongs.isNotEmpty) {
-          final shuffledSongs = List<Map<String, dynamic>>.from(artistSongs)..shuffle();
+          final shuffledSongs = List<Map<String, dynamic>>.from(artistSongs)
+            ..shuffle();
           final song = shuffledSongs.first;
           AudioService().playSong(song, playlistContext: shuffledSongs);
-          
+
           _showMagicOutcomeDialog(
             title: "Artist Radio Activated! 📻",
-            message: "Fate started the magic Radio Mix for $artistName.\nPlaying \"${song['title']}\"!",
+            message:
+                "Fate started the magic Radio Mix for $artistName.\nPlaying \"${song['title']}\"!",
             actionLabel: "OPEN PLAYER",
             onAction: () {
               Navigator.of(context).push(
@@ -648,21 +743,18 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           );
         } else {
-          final shuffled = List<Map<String, dynamic>>.from(_allSongs)..shuffle();
+          final shuffled = List<Map<String, dynamic>>.from(_allSongs)
+            ..shuffle();
           final song = shuffled.first;
           AudioService().playSong(song);
           _showMagicSnackbar("✨ Magic Play: ${song['title']}");
         }
       } else {
-        // Outcome 4: Switch to AI Suggestion & generate random mood mix
-        final moods = ['Focused', 'Relaxed', 'Energetic', 'Happy'];
-        final randomMood = moods[DateTime.now().microsecondsSinceEpoch % moods.length];
+        // Outcome 4: Switch to Vibe Stats tab
         setState(() {
-          _currentIndex = 3; // Switch to AI tab
-          _selectedAiMood = randomMood;
+          _currentIndex = 3; // Switch to Vibe Stats tab
         });
-        _generateAiMix();
-        _showMagicSnackbar("🔮 Magic routed you to AI Suggestion for a $randomMood mix!");
+        _showMagicSnackbar("🔮 Magic routed you to your Vibe Stats!");
       }
     });
   }
@@ -672,7 +764,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (currentSong != null) {
       AudioService().togglePlay();
     } else if (_magicPlaylist.isNotEmpty) {
-      AudioService().playSong(_magicPlaylist.first, playlistContext: _magicPlaylist);
+      AudioService().playSong(
+        _magicPlaylist.first,
+        playlistContext: _magicPlaylist,
+      );
     }
   }
 
@@ -680,15 +775,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentSong = AudioService().currentSongNotifier.value;
     if (currentSong == null) {
       if (_magicPlaylist.isNotEmpty) {
-        AudioService().playSong(_magicPlaylist.first, playlistContext: _magicPlaylist);
+        AudioService().playSong(
+          _magicPlaylist.first,
+          playlistContext: _magicPlaylist,
+        );
       }
       return;
     }
 
-    final idx = _magicPlaylist.indexWhere((s) => s['id'] == currentSong['id'] || s['title'] == currentSong['title']);
+    final idx = _magicPlaylist.indexWhere(
+      (s) => s['id'] == currentSong['id'] || s['title'] == currentSong['title'],
+    );
     if (idx != -1) {
       final nextIdx = (idx + 1) % _magicPlaylist.length;
-      AudioService().playSong(_magicPlaylist[nextIdx], playlistContext: _magicPlaylist);
+      AudioService().playSong(
+        _magicPlaylist[nextIdx],
+        playlistContext: _magicPlaylist,
+      );
     } else {
       AudioService().nextSong();
     }
@@ -698,15 +801,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentSong = AudioService().currentSongNotifier.value;
     if (currentSong == null) {
       if (_magicPlaylist.isNotEmpty) {
-        AudioService().playSong(_magicPlaylist.first, playlistContext: _magicPlaylist);
+        AudioService().playSong(
+          _magicPlaylist.first,
+          playlistContext: _magicPlaylist,
+        );
       }
       return;
     }
 
-    final idx = _magicPlaylist.indexWhere((s) => s['id'] == currentSong['id'] || s['title'] == currentSong['title']);
+    final idx = _magicPlaylist.indexWhere(
+      (s) => s['id'] == currentSong['id'] || s['title'] == currentSong['title'],
+    );
     if (idx != -1) {
       final prevIdx = (idx - 1 + _magicPlaylist.length) % _magicPlaylist.length;
-      AudioService().playSong(_magicPlaylist[prevIdx], playlistContext: _magicPlaylist);
+      AudioService().playSong(
+        _magicPlaylist[prevIdx],
+        playlistContext: _magicPlaylist,
+      );
     } else {
       AudioService().previousSong();
     }
@@ -799,7 +910,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         itemCount: _magicPlaylist.length,
                         itemBuilder: (context, index) {
                           final song = _magicPlaylist[index];
-                          final bool isCurrent = currentSong != null &&
+                          final bool isCurrent =
+                              currentSong != null &&
                               (currentSong['id'] == song['id'] ||
                                   currentSong['title'] == song['title']);
                           return ListTile(
@@ -832,7 +944,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: isCurrent
-                                    ? const Color(0xFFF2994A).withValues(alpha: 0.8)
+                                    ? const Color(
+                                        0xFFF2994A,
+                                      ).withValues(alpha: 0.8)
                                     : Colors.black54,
                               ),
                             ),
@@ -874,7 +988,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadSongs() async {
     final assetBundle = DefaultAssetBundle.of(context);
     try {
-      final String jsonString = await assetBundle.loadString('assets/tamil_songs.json');
+      final String jsonString = await assetBundle.loadString(
+        'assets/tamil_songs.json',
+      );
       final List<dynamic> jsonList = json.decode(jsonString);
       setState(() {
         _allSongs = jsonList
@@ -893,12 +1009,123 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<File> _getPlaylistsFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File('${directory.path}/playlists.json');
+  }
+
+  Future<void> _savePlaylists() async {
+    try {
+      final file = await _getPlaylistsFile();
+      final String jsonStr = json.encode(_userPlaylists);
+      await file.writeAsString(jsonStr);
+    } catch (e) {
+      debugPrint("Error saving playlists: $e");
+    }
+  }
+
+  Future<void> _loadPlaylists() async {
+    try {
+      final file = await _getPlaylistsFile();
+      if (await file.exists()) {
+        final String jsonStr = await file.readAsString();
+        final List<dynamic> decoded = json.decode(jsonStr);
+        setState(() {
+          _userPlaylists.clear();
+          _userPlaylists.addAll(
+            decoded.map((item) => Map<String, dynamic>.from(item)).toList(),
+          );
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading saved playlists: $e");
+    }
+  }
+
+  Future<File> _getStatsFile() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File('${directory.path}/listening_stats.json');
+  }
+
+  Future<void> _saveWeeklyStats() async {
+    try {
+      final file = await _getStatsFile();
+      final Map<String, dynamic> dataToSave = {
+        'weekly': _weeklyPlayStats,
+        'heatmap': _heatmapPlayStats,
+      };
+      await file.writeAsString(json.encode(dataToSave));
+    } catch (e) {
+      debugPrint("Error saving listening stats: $e");
+    }
+  }
+
+  Future<void> _loadWeeklyStats() async {
+    try {
+      final file = await _getStatsFile();
+      if (await file.exists()) {
+        final decoded = json.decode(await file.readAsString());
+        if (decoded is Map) {
+          setState(() {
+            if (decoded.containsKey('weekly')) {
+              _weeklyPlayStats = (decoded['weekly'] as Map).map(
+                (key, value) =>
+                    MapEntry(key.toString(), int.parse(value.toString())),
+              );
+            } else {
+              // Legacy format fallback
+              _weeklyPlayStats = decoded.map(
+                (key, value) =>
+                    MapEntry(key.toString(), int.parse(value.toString())),
+              );
+            }
+            if (decoded.containsKey('heatmap')) {
+              _heatmapPlayStats = (decoded['heatmap'] as Map).map(
+                (key, value) =>
+                    MapEntry(key.toString(), int.parse(value.toString())),
+              );
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading listening stats: $e");
+    }
+  }
+
+  void _incrementTodayPlayCount() {
+    final DateTime now = DateTime.now();
+    final List<String> days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final String today = days[now.weekday - 1];
+
+    // Determine time block
+    final int hour = now.hour;
+    String timeBlock = 'Night';
+    if (hour >= 6 && hour < 12) {
+      timeBlock = 'Morning';
+    } else if (hour >= 12 && hour < 18) {
+      timeBlock = 'Afternoon';
+    } else if (hour >= 18 && hour < 24) {
+      timeBlock = 'Evening';
+    }
+
+    setState(() {
+      _weeklyPlayStats[today] = (_weeklyPlayStats[today] ?? 0) + 1;
+      final String key = '$today-$timeBlock';
+      _heatmapPlayStats[key] = (_heatmapPlayStats[key] ?? 0) + 1;
+    });
+    _saveWeeklyStats();
+  }
+
   @override
   void initState() {
     super.initState();
-    debugPrint('🏠 HomeScreen: initState called');
-    AudioService().init();
+    debugPrint('HomeScreen: initState called');
+    _requestPermissions();
     _loadSongs();
+    _loadPlaylists();
+    _loadWeeklyStats();
+    _loadProfileImage();
     AudioService().currentSongNotifier.addListener(_onCurrentSongChanged);
     _recentlyPlayedController = PageController(
       initialPage: 1,
@@ -911,7 +1138,23 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _requestPermissions() async {
+    try {
+      if (await Permission.notification.isDenied) {
+        await Permission.notification.request();
+      }
+    } catch (e) {
+      debugPrint("Error requesting notification permission: $e");
+    }
+  }
+
   void _onCurrentSongChanged() {
+    final song = AudioService().currentSongNotifier.value;
+    if (song != null) {
+      final genre = _getSongGenre(song);
+      _genrePlayCounts[genre] = (_genrePlayCounts[genre] ?? 0) + 1;
+      _incrementTodayPlayCount();
+    }
     if (mounted) {
       setState(() {});
     }
@@ -934,6 +1177,22 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _playGenreMix(String genreName, String displayName) {
+    final genreSongs = _allSongs.where((song) {
+      return _getSongGenre(song) == genreName;
+    }).toList();
+    if (genreSongs.isNotEmpty) {
+      final shuffled = List<Map<String, dynamic>>.from(genreSongs)..shuffle();
+      AudioService().playSong(shuffled.first, playlistContext: shuffled);
+      _showMagicSnackbar("✨ Playing: $displayName Mix!");
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (context) => const PlayerScreen()));
+    } else {
+      _showMagicSnackbar("No songs available in $displayName right now.");
+    }
   }
 
   String _getGreeting() {
@@ -969,10 +1228,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Text(
             'No songs found. Check that assets/tamil_songs.json is present and listed in pubspec.yaml.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.black54,
-            ),
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.black54),
           ),
         ),
       );
@@ -990,7 +1246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildHomeDashboard(),
                 _buildSearchTab(),
                 _buildCreateTab(),
-                _buildAISuggestionTab(),
+                _buildVibeStatsTab(),
               ],
             ),
           ),
@@ -1083,9 +1339,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // 2. Floating Mini Music Player (Draggable/Bubble mode)
-          FloatingMiniPlayer(
-            getSongImageProvider: _getSongImageProvider,
-          ),
+          FloatingMiniPlayer(getSongImageProvider: _getSongImageProvider),
         ],
       ),
     );
@@ -1125,32 +1379,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     onPressed: () {},
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      FeatherIcons.clock,
-                      color: Color(0xFF1E1E24),
-                      size: 20,
-                    ),
-                    onPressed: () {},
-                  ),
+
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ProfileScreen(),
-                        ),
-                      );
+                      Navigator.of(context)
+                          .push(
+                            MaterialPageRoute(
+                              builder: (context) => ProfileScreen(
+                                playlistsCount: _userPlaylists.length,
+                                favoritesCount: AudioService()
+                                    .likedSongsNotifier
+                                    .value
+                                    .length,
+                                weeklyPlayStats: _weeklyPlayStats,
+                              ),
+                            ),
+                          )
+                          .then((_) => _loadProfileImage());
                     },
-                    child: const CircleAvatar(
-                      radius: 15,
-                      backgroundColor: Color(0xFF1E1E24),
-                      child: Icon(
-                        FeatherIcons.user,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                    ),
+                    child: _buildProfileAvatar(radius: 15, iconSize: 14),
                   ),
                 ],
               ),
@@ -1443,7 +1691,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 150,
                     margin: const EdgeInsets.only(right: 14.0),
                     decoration: BoxDecoration(
-                      gradient: card['image'] == null ? card['gradient'] as Gradient : null,
+                      gradient: card['image'] == null
+                          ? card['gradient'] as Gradient
+                          : null,
                       image: card['image'] != null
                           ? DecorationImage(
                               image: _getImageProvider(card['image'] as String),
@@ -1532,27 +1782,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context, isPlaying, child) {
                   // Determine if the current playing song is in our magic mix to display it,
                   // otherwise show the first song in our magic mix as a placeholder.
-                  final Map<String, dynamic> songToShow = (currentSong != null &&
-                          _magicPlaylist.any((s) => s['id'] == currentSong['id'] || s['title'] == currentSong['title']))
+                  final Map<String, dynamic> songToShow =
+                      (currentSong != null &&
+                          _magicPlaylist.any(
+                            (s) =>
+                                s['id'] == currentSong['id'] ||
+                                s['title'] == currentSong['title'],
+                          ))
                       ? currentSong
-                      : (_magicPlaylist.isNotEmpty ? _magicPlaylist.first : {
-                          'title': 'Shuffle Magic Mix',
-                          'artist': 'Play to start magic',
-                          'img': 'assets/logo.png',
-                        });
+                      : (_magicPlaylist.isNotEmpty
+                            ? _magicPlaylist.first
+                            : {
+                                'title': 'Shuffle Magic Mix',
+                                'artist': 'Play to start magic',
+                                'img': 'assets/logo.png',
+                              });
 
-                  final bool isActuallyPlaying = isPlaying && currentSong != null &&
-                      (currentSong['id'] == songToShow['id'] || currentSong['title'] == songToShow['title']);
+                  final bool isActuallyPlaying =
+                      isPlaying &&
+                      currentSong != null &&
+                      (currentSong['id'] == songToShow['id'] ||
+                          currentSong['title'] == songToShow['title']);
 
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF2994A), // Vibrant orange color matching the mockup
+                      color: const Color(
+                        0xFFF2994A,
+                      ), // Vibrant orange color matching the mockup
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFF2994A).withValues(alpha: 0.25),
+                          color: const Color(
+                            0xFFF2994A,
+                          ).withValues(alpha: 0.25),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),
@@ -1601,10 +1865,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    songToShow['artist'] ?? 'Click play to start magic',
+                                    songToShow['artist'] ??
+                                        'Click play to start magic',
                                     style: GoogleFonts.inter(
                                       fontSize: 12,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -1623,7 +1890,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               child: const Center(
                                 child: Icon(
-                                  Icons.wifi_tethering_rounded, // Resembles the soundwaves/logo
+                                  Icons
+                                      .wifi_tethering_rounded, // Resembles the soundwaves/logo
                                   color: Color(0xFFF2994A),
                                   size: 18,
                                 ),
@@ -1638,7 +1906,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             // Previous song button
                             IconButton(
-                              icon: const Icon(Icons.skip_previous_rounded, color: Colors.white),
+                              icon: const Icon(
+                                Icons.skip_previous_rounded,
+                                color: Colors.white,
+                              ),
                               iconSize: 32,
                               onPressed: () {
                                 _magicPreviousSong();
@@ -1659,7 +1930,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 child: Center(
                                   child: Icon(
-                                    isActuallyPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                    isActuallyPlaying
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded,
                                     color: const Color(0xFFF2994A),
                                     size: 28,
                                   ),
@@ -1669,7 +1942,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(width: 12),
                             // Next song button
                             IconButton(
-                              icon: const Icon(Icons.skip_next_rounded, color: Colors.white),
+                              icon: const Icon(
+                                Icons.skip_next_rounded,
+                                color: Colors.white,
+                              ),
                               iconSize: 32,
                               onPressed: () {
                                 _magicNextSong();
@@ -1695,7 +1971,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               style: TextButton.styleFrom(
-                                backgroundColor: Colors.white.withValues(alpha: 0.15),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.15,
+                                ),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
                                   vertical: 8,
@@ -1714,6 +1992,205 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
+
+          const SizedBox(height: 28),
+
+          // Daily Mix section heading
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Daily Mix',
+                    style: GoogleFonts.outfit(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E1E24),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Based on your recent vibes',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+              const Icon(
+                Icons.bolt_rounded,
+                color: Color(0xFFF2994A),
+                size: 24,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Dynamic Daily Mix cards
+          SizedBox(
+            height: 190,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: _topGenres.length,
+              itemBuilder: (context, index) {
+                final card = _topGenres[index];
+                final String genreName = card['genre']!;
+                final String displayName = card['label']!;
+                final String imagePath = card['image']!;
+
+                // Get artist names list in this genre to put as a description snippet
+                final genreSongs = _allSongs
+                    .where((song) => _getSongGenre(song) == genreName)
+                    .toList();
+                final Set<String> artists = genreSongs
+                    .map((s) => (s['artist'] ?? '').toString())
+                    .toSet();
+                final String artistsDesc = artists.isNotEmpty
+                    ? 'Including ${artists.take(3).join(", ")}'
+                    : 'A unique mix curated for you';
+
+                return Container(
+                  width: 145,
+                  margin: const EdgeInsets.only(right: 16),
+                  child: GestureDetector(
+                    onTap: () => _playGenreMix(genreName, displayName),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Stack for card art, gradient, and play button overlay
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (card['glow'] as Color).withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Stack(
+                                children: [
+                                  // Background image
+                                  Positioned.fill(
+                                    child: Image(
+                                      image: _getImageProvider(imagePath),
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Container(
+                                                color: const Color(0xFF1E1E24),
+                                                child: const Icon(
+                                                  Icons.music_note,
+                                                  color: Colors.white24,
+                                                  size: 40,
+                                                ),
+                                              ),
+                                    ),
+                                  ),
+                                  // Gradient tint overlay
+                                  Positioned.fill(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.black.withValues(alpha: 0.1),
+                                            Colors.black.withValues(alpha: 0.7),
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  // Album/Mix Label
+                                  Positioned(
+                                    bottom: 12,
+                                    left: 12,
+                                    right: 12,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          displayName,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white,
+                                            letterSpacing: 0.5,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Daily Mix ${index + 1}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white60,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Tiny glass play button on top right
+                                  Positioned(
+                                    top: 10,
+                                    right: 10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.25,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.play_arrow_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Subtitles
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(
+                            artistsDesc,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black54,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -1721,14 +2198,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Spotify-like Search Tab View
   Widget _buildSearchTab() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(
-        top: 56.0,
-        left: 16.0,
-        right: 16.0,
-        bottom: 150.0,
-      ),
+    final query = _searchQuery.toLowerCase();
+    final List<Map<String, dynamic>> results;
+    if (query.isEmpty) {
+      results = [];
+    } else {
+      final matchedMovies = _allSongs
+          .where(
+            (song) =>
+                (song['movie'] ?? '').toString().toLowerCase().contains(query),
+          )
+          .map((song) => (song['movie'] ?? '').toString())
+          .toSet();
+
+      final moviesOfMatchedSongs = _allSongs
+          .where((song) {
+            final title = (song['title'] ?? '').toString().toLowerCase();
+            final artist = (song['artist'] ?? '').toString().toLowerCase();
+            return title.contains(query) || artist.contains(query);
+          })
+          .map((song) => (song['movie'] ?? '').toString())
+          .where((m) => m.isNotEmpty)
+          .toSet();
+
+      final allTargetMovies = {...matchedMovies, ...moviesOfMatchedSongs};
+
+      results = _allSongs
+          .where(
+            (song) =>
+                allTargetMovies.contains((song['movie'] ?? '').toString()),
+          )
+          .toList();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 56.0, left: 16.0, right: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1745,23 +2249,31 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               GestureDetector(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProfileScreen(),
-                    ),
-                  );
+                  Navigator.of(context)
+                      .push(
+                        MaterialPageRoute(
+                          builder: (context) => ProfileScreen(
+                            playlistsCount: _userPlaylists.length,
+                            favoritesCount:
+                                AudioService().likedSongsNotifier.value.length,
+                            weeklyPlayStats: _weeklyPlayStats,
+                          ),
+                        ),
+                      )
+                      .then((_) => _loadProfileImage());
                 },
-                child: const CircleAvatar(
-                  radius: 15,
-                  backgroundColor: Color(0xFF1E1E24),
-                  child: Icon(FeatherIcons.user, color: Colors.white, size: 14),
-                ),
+                child: _buildProfileAvatar(radius: 15, iconSize: 14),
               ),
             ],
           ),
           const SizedBox(height: 20),
           TextField(
             style: GoogleFonts.inter(color: const Color(0xFF1E1E24)),
+            onChanged: (val) {
+              setState(() {
+                _searchQuery = val.trim();
+              });
+            },
             decoration: InputDecoration(
               hintText: 'What do you want to listen to?',
               hintStyle: GoogleFonts.inter(color: Colors.black38, fontSize: 14),
@@ -1786,76 +2298,126 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 28),
-          Text(
-            'Browse All',
-            style: GoogleFonts.outfit(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E1E24),
-            ),
-          ),
-          const SizedBox(height: 16),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.6,
-            children: [
-              _buildBrowseCard('Podcasts', const [
-                Color(0xFFE23333),
-                Color(0xFF8B0000),
-              ]),
-              _buildBrowseCard('Made For You', const [
-                Color(0xFF11998E),
-                Color(0xFF38EF7D),
-              ]),
-              _buildBrowseCard('New Releases', const [
-                Color(0xFFFF9900),
-                Color(0xFFFF5E62),
-              ]),
-              _buildBrowseCard('Lofi & Ambient', const [
-                Color(0xFF3C1053),
-                Color(0xFFAD5389),
-              ]),
-              _buildBrowseCard('Hip-Hop', const [
-                Color(0xFFFC466B),
-                Color(0xFF3F5EFB),
-              ]),
-              _buildBrowseCard('Rock', const [
-                Color(0xFF00C6FF),
-                Color(0xFF0072FF),
-              ]),
-            ],
+          const SizedBox(height: 20),
+          Expanded(
+            child: _searchQuery.isNotEmpty
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Search Results',
+                        style: GoogleFonts.outfit(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E1E24),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: results.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No matching songs found',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.only(bottom: 150.0),
+                                itemCount: results.length,
+                                itemBuilder: (context, index) {
+                                  final song = results[index];
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.03,
+                                          ),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ListTile(
+                                      leading: Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          image: DecorationImage(
+                                            image: _getSongImageProvider(song),
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      ),
+                                      title: Text(
+                                        song['title'] ?? '',
+                                        style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF1E1E24),
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        '${song['artist'] ?? ''}${song['movie'] != null && song['movie'].toString().isNotEmpty ? ' • ${song['movie']}' : ''}',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.black54,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      trailing: const Icon(
+                                        Icons.play_arrow_rounded,
+                                        color: Color(0xFF1E1E24),
+                                      ),
+                                      onTap: () {
+                                        AudioService().playSong(
+                                          song,
+                                          playlistContext: results,
+                                        );
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const PlayerScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          FeatherIcons.search,
+                          size: 48,
+                          color: Colors.black26,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Search for songs or artists',
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBrowseCard(String title, List<Color> colors) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(16.0),
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: Text(
-          title,
-          style: GoogleFonts.outfit(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
       ),
     );
   }
@@ -1886,17 +2448,20 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               GestureDetector(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProfileScreen(),
-                    ),
-                  );
+                  Navigator.of(context)
+                      .push(
+                        MaterialPageRoute(
+                          builder: (context) => ProfileScreen(
+                            playlistsCount: _userPlaylists.length,
+                            favoritesCount:
+                                AudioService().likedSongsNotifier.value.length,
+                            weeklyPlayStats: _weeklyPlayStats,
+                          ),
+                        ),
+                      )
+                      .then((_) => _loadProfileImage());
                 },
-                child: const CircleAvatar(
-                  radius: 15,
-                  backgroundColor: Color(0xFF1E1E24),
-                  child: Icon(FeatherIcons.user, color: Colors.white, size: 14),
-                ),
+                child: _buildProfileAvatar(radius: 15, iconSize: 14),
               ),
             ],
           ),
@@ -1938,122 +2503,276 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (_userPlaylists.isEmpty) ...[
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 40.0),
-                child: Text(
-                  'No playlists created yet. Tap above to create one!',
-                  style: TextStyle(color: Colors.black45),
+          ValueListenableBuilder<List<Map<String, dynamic>>>(
+            valueListenable: AudioService().likedSongsNotifier,
+            builder: (context, likedSongs, child) {
+              final int totalItems = 1 + _userPlaylists.length;
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.8,
                 ),
-              ),
-            ),
-          ] else ...[
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _userPlaylists.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final playlist = _userPlaylists[index];
-                final String coverUrl = playlist['image'] ?? 'assets/logo.png';
-                final String pName = playlist['name'] ?? 'My Playlist';
-                final int songCount = (playlist['songs'] as List?)?.length ?? 0;
-
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ListTile(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => PlaylistDetailScreen(
-                            playlist: playlist,
-                            allSongs: _allSongs,
-                            onPlaylistUpdated: (updatedPlaylist) {
-                              setState(() {
-                                _userPlaylists[index] = updatedPlaylist;
-                              });
-                            },
+                itemCount: totalItems,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    // Liked Songs card
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => PlaylistDetailScreen(
+                              playlist: {
+                                'name': 'Liked Songs',
+                                'description': '',
+                                'image': '',
+                                'isLikedSongs': true,
+                              },
+                              allSongs: _allSongs,
+                              onPlaylistUpdated: (_) {},
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    leading: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SizedBox(
-                        width: 48,
-                        height: 48,
-                        child: Image(
-                          image: _getImageProvider(coverUrl),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      pName,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E1E24),
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Playlist • $songCount ${songCount == 1 ? "song" : "songs"}',
-                      style: GoogleFonts.inter(
-                        color: Colors.black54,
-                        fontSize: 12,
-                      ),
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(
-                        FeatherIcons.trash2,
-                        color: Colors.redAccent,
-                        size: 18,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _userPlaylists.removeAt(index);
-                        });
+                        );
                       },
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Container(
+                                width: double.infinity,
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Color(0xFFE5B3B3),
+                                      Color(0xFFF7D1D1),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.favorite_rounded,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Liked Songs',
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF1E1E24),
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '${likedSongs.length} ${likedSongs.length == 1 ? "song" : "songs"}',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.black54,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else {
+                    // Created Playlist card
+                    final playlistIndex = index - 1;
+                    final playlist = _userPlaylists[playlistIndex];
+                    final String coverUrl =
+                        playlist['image'] ?? 'assets/logo.png';
+                    final String pName = playlist['name'] ?? 'My Playlist';
+                    final int songCount =
+                        (playlist['songs'] as List?)?.length ?? 0;
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => PlaylistDetailScreen(
+                              playlist: playlist,
+                              allSongs: _allSongs,
+                              onPlaylistUpdated: (updatedPlaylist) {
+                                setState(() {
+                                  _userPlaylists[playlistIndex] =
+                                      updatedPlaylist;
+                                });
+                                _savePlaylists();
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(12),
+                                      ),
+                                      child: Image(
+                                        image: _getImageProvider(coverUrl),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 6,
+                                    right: 6,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _userPlaylists.removeAt(
+                                            playlistIndex,
+                                          );
+                                        });
+                                        _savePlaylists();
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(5),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          FeatherIcons.trash2,
+                                          color: Colors.white,
+                                          size: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    pName,
+                                    style: GoogleFonts.inter(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF1E1E24),
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '$songCount ${songCount == 1 ? "song" : "songs"}',
+                                    style: GoogleFonts.inter(
+                                      color: Colors.black54,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                },
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
   void _showCreatePlaylistDialog() async {
-    final String? name = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (context) => const CreatePlaylistScreen(),
-      ),
-    );
+    final count = _userPlaylists.length + 1;
+    final remainder10 = count % 10;
+    final remainder100 = count % 100;
+    String suffix = 'th';
+    if (remainder10 == 1 && remainder100 != 11) {
+      suffix = 'st';
+    } else if (remainder10 == 2 && remainder100 != 12) {
+      suffix = 'nd';
+    } else if (remainder10 == 3 && remainder100 != 13) {
+      suffix = 'rd';
+    }
+    final proposedName = '$count$suffix Playlist';
 
-    if (name != null && name.isNotEmpty) {
+    final Map<String, dynamic>? playlistData = await Navigator.of(context)
+        .push<Map<String, dynamic>>(
+          MaterialPageRoute(
+            builder: (context) =>
+                CreatePlaylistScreen(proposedName: proposedName),
+          ),
+        );
+
+    if (playlistData != null) {
+      final String name = playlistData['name'] ?? proposedName;
+      final String desc = playlistData['description'] ?? '';
+      final String img = playlistData['image'] ?? '';
+
       final newPlaylist = {
         'name': name,
-        'image': 'https://i.pinimg.com/736x/a2/e1/9b/a2e19b8849b293d05267b209d00b05b4.jpg', // Default Peace Anime
-        'description': 'peace 🎼',
+        'image': img.isNotEmpty
+            ? img
+            : 'https://i.pinimg.com/736x/a2/e1/9b/a2e19b8849b293d05267b209d00b05b4.jpg',
+        'description': desc,
         'songs': <Map<String, dynamic>>[],
       };
 
       setState(() {
         _userPlaylists.add(newPlaylist);
       });
+      _savePlaylists();
 
       if (mounted) {
         Navigator.of(context).push(
@@ -2068,6 +2787,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _userPlaylists[idx] = updatedPlaylist;
                   }
                 });
+                _savePlaylists();
               },
             ),
           ),
@@ -2076,8 +2796,49 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // AI Suggestion & Mixing view
-  Widget _buildAISuggestionTab() {
+  Widget _buildVibeStatsTab() {
+    int maxCount = 1;
+    int totalPlays = 0;
+    String peakDay = 'None';
+    int peakCount = 0;
+
+    _weeklyPlayStats.forEach((day, count) {
+      totalPlays += count;
+      if (count > peakCount) {
+        peakCount = count;
+        peakDay = day;
+      }
+      if (count > maxCount) {
+        maxCount = count;
+      }
+    });
+
+    final Map<String, String> fullDayNames = {
+      'Mon': 'Monday',
+      'Tue': 'Tuesday',
+      'Wed': 'Wednesday',
+      'Thu': 'Thursday',
+      'Fri': 'Friday',
+      'Sat': 'Saturday',
+      'Sun': 'Sunday',
+    };
+
+    // Calculate dynamic listener tier
+    String listenerTier = 'Starter';
+    IconData tierIcon = Icons.bubble_chart_rounded;
+    if (totalPlays >= 50) {
+      listenerTier = 'Vibe Master';
+      tierIcon = Icons.military_tech_rounded;
+    } else if (totalPlays >= 20) {
+      listenerTier = 'Music Lover';
+      tierIcon = Icons.favorite_rounded;
+    } else if (totalPlays >= 5) {
+      listenerTier = 'Explorer';
+      tierIcon = Icons.explore_rounded;
+    }
+
+    final List<String> days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(
@@ -2093,7 +2854,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'AI Suggestion',
+                'Vibe Stats',
                 style: GoogleFonts.outfit(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -2102,296 +2863,298 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               GestureDetector(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ProfileScreen(),
-                    ),
-                  );
+                  Navigator.of(context)
+                      .push(
+                        MaterialPageRoute(
+                          builder: (context) => ProfileScreen(
+                            playlistsCount: _userPlaylists.length,
+                            favoritesCount:
+                                AudioService().likedSongsNotifier.value.length,
+                            weeklyPlayStats: _weeklyPlayStats,
+                          ),
+                        ),
+                      )
+                      .then((_) => _loadProfileImage());
                 },
-                child: const CircleAvatar(
-                  radius: 15,
-                  backgroundColor: Color(0xFF1E1E24),
-                  child: Icon(FeatherIcons.user, color: Colors.white, size: 14),
-                ),
+                child: _buildProfileAvatar(radius: 15, iconSize: 14),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E1E24), Color(0xFF0C0C0E)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.1),
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hotify AI Engine',
-                            style: GoogleFonts.outfit(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Ready to generate custom mixes',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (_isAiGenerating) ...[
-                  const SizedBox(height: 24),
-                  const LinearProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    backgroundColor: Colors.white12,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Synthesizing tracks for $_selectedAiMood mood...',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
-          Text(
-            'Configure Mix',
-            style: GoogleFonts.outfit(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E1E24),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Select Mood',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1E1E24),
-                      ),
-                    ),
-                    DropdownButton<String>(
-                      value: _selectedAiMood,
-                      dropdownColor: Colors.white,
-                      underline: Container(),
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF1E1E24),
-                        fontWeight: FontWeight.bold,
-                      ),
-                      items: ['Focused', 'Relaxed', 'Energetic', 'Happy'].map((
-                        String value,
-                      ) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedAiMood = newValue;
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _isAiGenerating ? null : _generateAiMix,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E1E24),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(
-                        0xFF1E1E24,
-                      ).withValues(alpha: 0.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                    child: Text(
-                      'GENERATE MIX',
-                      style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_generatedAiTracks.isNotEmpty && !_isAiGenerating) ...[
-            const SizedBox(height: 28),
-            Text(
-              'Suggested Mix Tracks',
-              style: GoogleFonts.outfit(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E1E24),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _generatedAiTracks.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final track = _generatedAiTracks[index];
-                return Container(
+
+          // Stats Row
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 4,
+                        blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFF4F5F7),
-                      child: Icon(
-                        FeatherIcons.music,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.headphones_rounded,
                         color: Color(0xFF1E1E24),
-                        size: 16,
+                        size: 24,
                       ),
-                    ),
-                    title: Text(
-                      track,
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E1E24),
-                        fontSize: 14,
+                      const SizedBox(height: 12),
+                      Text(
+                        'Total Plays',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    subtitle: Text('AI Synthesized • $_selectedAiMood Mix'),
-                    trailing: const Icon(
-                      Icons.play_arrow,
-                      color: Color(0xFF1E1E24),
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$totalPlays songs',
+                        style: GoogleFonts.outfit(
+                          fontSize: 20,
+                          color: const Color(0xFF1E1E24),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(tierIcon, color: const Color(0xFF1E1E24), size: 24),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Vibe Tier',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        listenerTier,
+                        style: GoogleFonts.outfit(
+                          fontSize: 20,
+                          color: const Color(0xFF1E1E24),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Peak Vibe Banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E1E24), Color(0xFF333344)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.bolt_rounded, color: Colors.amber, size: 32),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'PEAK VIBE DAY',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.white60,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        peakDay == 'None'
+                            ? 'No tracks played yet'
+                            : 'Your energy peaks on ${fullDayNames[peakDay]}s!',
+                        style: GoogleFonts.outfit(
+                          fontSize: 15,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Weekly Goal tracker with standard base limits
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Daily Activity',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E1E24),
+                ),
+              ),
+              Text(
+                'Weekly Overview',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Colors.black45,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: days.map((day) {
+                final int count = _weeklyPlayStats[day] ?? 0;
+                // Scale bar width dynamically based on maximum weekly count (relative scale)
+                final double percentage = count / (maxCount > 0 ? maxCount : 1);
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 44,
+                        child: Text(
+                          day,
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1E1E24),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0F1F4),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                            FractionallySizedBox(
+                              widthFactor: percentage == 0 ? 0.01 : percentage,
+                              child: Container(
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF1E1E24),
+                                      Color(0xFF6F7285),
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 75,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              count == 1 ? '1 song' : '$count songs',
+                              style: GoogleFonts.inter(
+                                color: Colors.black87,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
-              },
+              }).toList(),
             ),
-          ],
+          ),
         ],
       ),
     );
-  }
-
-  void _generateAiMix() {
-    setState(() {
-      _isAiGenerating = true;
-    });
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        setState(() {
-          _isAiGenerating = false;
-          if (_selectedAiMood == 'Focused') {
-            _generatedAiTracks = [
-              'Deep Concentration',
-              'Coding Flow',
-              'Memory Waves',
-            ];
-          } else if (_selectedAiMood == 'Relaxed') {
-            _generatedAiTracks = [
-              'Quiet Sunset',
-              'Calm Breeze',
-              'Coffee Shop Rain',
-            ];
-          } else if (_selectedAiMood == 'Energetic') {
-            _generatedAiTracks = [
-              'Cyberpunk Chase',
-              'Beat Cardio',
-              'Synth Neon Waves',
-            ];
-          } else {
-            _generatedAiTracks = [
-              'Summer Sunshine',
-              'Happy Vibe',
-              'Pop Carnival',
-            ];
-          }
-        });
-      }
-    });
   }
 }
 
 class FloatingMiniPlayer extends StatefulWidget {
   final ImageProvider Function(Map<String, dynamic>) getSongImageProvider;
 
-  const FloatingMiniPlayer({
-    super.key,
-    required this.getSongImageProvider,
-  });
+  const FloatingMiniPlayer({super.key, required this.getSongImageProvider});
 
   @override
   State<FloatingMiniPlayer> createState() => _FloatingMiniPlayerState();
 }
 
-class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTickerProviderStateMixin {
+class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
+    with SingleTickerProviderStateMixin {
   bool _isBubbleMode = false;
   Offset _playerPosition = Offset.zero;
   bool _isDragging = false;
-  bool _isMiniPlayerLiked = false;
 
   late AnimationController _snapController;
   late Animation<Offset> _snapAnimation;
@@ -2405,17 +3168,17 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
-    _snapAnimation = _snapController.drive(
-      CurveTween(curve: Curves.easeOutCubic),
-    ).drive(
-      Tween<Offset>(begin: Offset.zero, end: Offset.zero),
-    );
+    _snapAnimation = _snapController
+        .drive(CurveTween(curve: Curves.easeOutCubic))
+        .drive(Tween<Offset>(begin: Offset.zero, end: Offset.zero));
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_playerPosition == Offset.zero && !_isDragging && !_snapController.isAnimating) {
+    if (_playerPosition == Offset.zero &&
+        !_isDragging &&
+        !_snapController.isAnimating) {
       final size = MediaQuery.of(context).size;
       _playerPosition = Offset(size.width - 76.0, size.height / 2 - 30.0);
     }
@@ -2430,11 +3193,9 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
   void _snapTo(Offset target) {
     _snapStart = _playerPosition;
     _snapTarget = target;
-    _snapAnimation = _snapController.drive(
-      CurveTween(curve: Curves.easeOutCubic),
-    ).drive(
-      Tween<Offset>(begin: _snapStart, end: _snapTarget),
-    );
+    _snapAnimation = _snapController
+        .drive(CurveTween(curve: Curves.easeOutCubic))
+        .drive(Tween<Offset>(begin: _snapStart, end: _snapTarget));
     _snapController.reset();
     _snapController.forward();
   }
@@ -2442,7 +3203,7 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    
+
     return ValueListenableBuilder<Map<String, dynamic>?>(
       valueListenable: AudioService().currentSongNotifier,
       builder: (context, currentSong, child) {
@@ -2454,8 +3215,10 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
         return AnimatedBuilder(
           animation: _snapController,
           builder: (context, child) {
-            final position = _snapController.isAnimating ? _snapAnimation.value : _playerPosition;
-            
+            final position = _snapController.isAnimating
+                ? _snapAnimation.value
+                : _playerPosition;
+
             if (_isBubbleMode) {
               return Positioned(
                 left: position.dx,
@@ -2479,7 +3242,10 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                     if (_playerPosition.dx + 30 > size.width / 2) {
                       targetX = size.width - 76.0;
                     }
-                    final double targetY = _playerPosition.dy.clamp(60.0, size.height - 160.0);
+                    final double targetY = _playerPosition.dy.clamp(
+                      60.0,
+                      size.height - 160.0,
+                    );
                     setState(() {
                       _playerPosition = Offset(targetX, targetY);
                       _isDragging = false;
@@ -2536,7 +3302,10 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                     if (_playerPosition.dx + 30 > size.width / 2) {
                       targetX = size.width - 76.0;
                     }
-                    final double targetY = _playerPosition.dy.clamp(60.0, size.height - 160.0);
+                    final double targetY = _playerPosition.dy.clamp(
+                      60.0,
+                      size.height - 160.0,
+                    );
                     setState(() {
                       _playerPosition = Offset(targetX, targetY);
                       _isDragging = false;
@@ -2577,7 +3346,9 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                                 color: Colors.grey.shade800,
                                 borderRadius: BorderRadius.circular(12),
                                 image: DecorationImage(
-                                  image: widget.getSongImageProvider(currentSong),
+                                  image: widget.getSongImageProvider(
+                                    currentSong,
+                                  ),
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -2588,11 +3359,13 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               title,
@@ -2627,11 +3400,16 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                                               width: 14,
                                               height: 14,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) => const Icon(
-                                                Icons.music_note,
-                                                size: 14,
-                                                color: Colors.white70,
-                                              ),
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const Icon(
+                                                    Icons.music_note,
+                                                    size: 14,
+                                                    color: Colors.white70,
+                                                  ),
                                             ),
                                           ),
                                           const SizedBox(width: 4),
@@ -2651,19 +3429,34 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                                   const SizedBox(height: 6),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
-                                      GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _isMiniPlayerLiked = !_isMiniPlayerLiked;
-                                          });
+                                      ValueListenableBuilder<
+                                        List<Map<String, dynamic>>
+                                      >(
+                                        valueListenable:
+                                            AudioService().likedSongsNotifier,
+                                        builder: (context, likedSongs, child) {
+                                          final bool isLiked = AudioService()
+                                              .isSongLiked(currentSong);
+                                          return GestureDetector(
+                                            onTap: () {
+                                              AudioService().toggleLikeSong(
+                                                currentSong,
+                                              );
+                                            },
+                                            child: Icon(
+                                              isLiked
+                                                  ? Icons.favorite
+                                                  : Icons.favorite_border,
+                                              color: isLiked
+                                                  ? Colors.redAccent
+                                                  : Colors.white70,
+                                              size: 20,
+                                            ),
+                                          );
                                         },
-                                        child: Icon(
-                                          _isMiniPlayerLiked ? Icons.favorite : Icons.favorite_border,
-                                          color: _isMiniPlayerLiked ? Colors.redAccent : Colors.white70,
-                                          size: 20,
-                                        ),
                                       ),
                                       const SizedBox(width: 16),
                                       GestureDetector(
@@ -2678,10 +3471,12 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                                       ),
                                       const SizedBox(width: 16),
                                       ValueListenableBuilder<bool>(
-                                        valueListenable: AudioService().isPlayingNotifier,
+                                        valueListenable:
+                                            AudioService().isPlayingNotifier,
                                         builder: (context, isPlaying, child) {
                                           return ValueListenableBuilder<bool>(
-                                            valueListenable: AudioService().isLoadingNotifier,
+                                            valueListenable: AudioService()
+                                                .isLoadingNotifier,
                                             builder: (context, isLoading, child) {
                                               return GestureDetector(
                                                 onTap: () {
@@ -2690,23 +3485,33 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                                                 child: Container(
                                                   width: 32,
                                                   height: 32,
-                                                  decoration: const BoxDecoration(
-                                                    shape: BoxShape.circle,
-                                                    color: Colors.white,
-                                                  ),
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: Colors.white,
+                                                      ),
                                                   child: Center(
                                                     child: isLoading
                                                         ? const SizedBox(
                                                             width: 14,
                                                             height: 14,
-                                                            child: CircularProgressIndicator(
-                                                              strokeWidth: 1.5,
-                                                              color: Colors.black87,
-                                                            ),
+                                                            child:
+                                                                CircularProgressIndicator(
+                                                                  strokeWidth:
+                                                                      1.5,
+                                                                  color: Colors
+                                                                      .black87,
+                                                                ),
                                                           )
                                                         : Icon(
-                                                            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                                            color: const Color(0xFF1E1E24),
+                                                            isPlaying
+                                                                ? Icons
+                                                                      .pause_rounded
+                                                                : Icons
+                                                                      .play_arrow_rounded,
+                                                            color: const Color(
+                                                              0xFF1E1E24,
+                                                            ),
                                                             size: 20,
                                                           ),
                                                   ),
@@ -2741,14 +3546,21 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
                             return ValueListenableBuilder<Duration>(
                               valueListenable: AudioService().durationNotifier,
                               builder: (context, duration, child) {
-                                final posMs = position.inMilliseconds.toDouble();
-                                final durMs = duration.inMilliseconds.toDouble();
-                                final double progress = (durMs > 0) ? (posMs / durMs).clamp(0.0, 1.0) : 0.0;
+                                final posMs = position.inMilliseconds
+                                    .toDouble();
+                                final durMs = duration.inMilliseconds
+                                    .toDouble();
+                                final double progress = (durMs > 0)
+                                    ? (posMs / durMs).clamp(0.0, 1.0)
+                                    : 0.0;
                                 return ClipRRect(
                                   borderRadius: BorderRadius.circular(2),
                                   child: LinearProgressIndicator(
                                     value: progress,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE5B3B3)),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          Color(0xFFE5B3B3),
+                                        ),
                                     backgroundColor: Colors.white12,
                                     minHeight: 2.0,
                                   ),
@@ -2767,15 +3579,5 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer> with SingleTick
         );
       },
     );
-  
-
-  
-  
-  
-
+  }
 }
-
-
-
-}
-

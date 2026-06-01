@@ -7,12 +7,14 @@ import 'splash_screen.dart';
 import 'init_status.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
+import 'services/audio_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // bool firebaseInitialized = false; // moved to init_status.dart
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Custom Error Widget to show screen-level exceptions instead of a silent white screen
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
@@ -29,7 +31,11 @@ void main() async {
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.bug_report_rounded, color: Colors.redAccent, size: 32),
+                      Icon(
+                        Icons.bug_report_rounded,
+                        color: Colors.redAccent,
+                        size: 32,
+                      ),
                       SizedBox(width: 12),
                       Text(
                         "App Crash Detected",
@@ -62,10 +68,7 @@ void main() async {
                   const SizedBox(height: 8),
                   Text(
                     details.stack?.toString() ?? "No stack trace available",
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 10,
-                    ),
+                    style: const TextStyle(color: Colors.white54, fontSize: 10),
                   ),
                 ],
               ),
@@ -77,8 +80,18 @@ void main() async {
   };
 
   // Start initializations in the background so they don't block runApp and cause a white screen
-  debugPrint('🔧 Starting service initialization...');
+  debugPrint('Starting service initialization...');
   _initializeServices();
+
+  // Request notification permissions for Android 13+ is moved to splash screen/home screen to prevent ANR.
+
+  // audio_service MUST be initialized before runApp for notification to work
+  try {
+    await AudioService().init();
+    debugPrint('AudioService initialized before runApp');
+  } catch (e) {
+    debugPrint('AudioService init failed (non-fatal): $e');
+  }
 
   runApp(const HotifyApp());
 }
@@ -95,9 +108,9 @@ Future<void> _initializeServices() async {
       ),
     );
     firebaseInitialized = true;
-    debugPrint('✅ Firebase initialized successfully.');
+    debugPrint('Firebase initialized successfully.');
   } catch (e) {
-    debugPrint('❌ Firebase initialization failed: $e');
+    debugPrint('Firebase initialization failed: $e');
   }
 }
 
@@ -106,7 +119,7 @@ class HotifyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🚀 Building HotifyApp');
+    debugPrint('Building HotifyApp');
     return MaterialApp(
       title: 'Hotify Open Audio',
       debugShowCheckedModeBanner: false,
@@ -144,7 +157,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🔐 AuthGate: initState start');
+    debugPrint(' AuthGate: initState start');
     // After 2.5 seconds, if Firebase still hasn't completed initialization (or has empty apps),
     // show a bypass button.
     Future.delayed(const Duration(milliseconds: 2500), () {
@@ -173,12 +186,12 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_bypassed) {
-      debugPrint('🔐 AuthGate: bypassed to HomeScreen');
+      debugPrint('AuthGate: bypassed to HomeScreen');
       return const HomeScreen();
     }
 
     if (Firebase.apps.isEmpty) {
-      debugPrint('🔐 AuthGate: Firebase apps empty, showing loading UI');
+      debugPrint('AuthGate: Firebase apps empty, showing loading UI');
       return Scaffold(
         backgroundColor: const Color(0xFFF4F5F7),
         body: Center(
@@ -224,7 +237,7 @@ class _AuthGateState extends State<AuthGate> {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          debugPrint('🔐 AuthGate: auth stream waiting');
+          debugPrint('AuthGate: auth stream waiting');
           return const Scaffold(
             backgroundColor: Color(0xFFF4F5F7),
             body: Center(
@@ -235,10 +248,10 @@ class _AuthGateState extends State<AuthGate> {
           );
         }
         if (snapshot.hasData) {
-          debugPrint('🔐 AuthGate: User logged in, navigating to HomeScreen');
+          debugPrint(' AuthGate: User logged in, navigating to HomeScreen');
           return const HomeScreen();
         }
-        debugPrint('🔐 AuthGate: No user, showing LoginScreen');
+        debugPrint('AuthGate: No user, showing LoginScreen');
         return const LoginScreen();
       },
     );
