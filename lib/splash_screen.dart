@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7), // Matching custom theme background
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Matching custom theme background
       body: Stack(
         alignment: Alignment.center,
         children: [
@@ -111,14 +111,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: child,
                 );
               },
-              child: const Column(
+              child: Column(
                 children: [
                   Text(
                     'HOTIFY',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF1E1E24), // Sleek black/charcoal
+                      color: Theme.of(context).colorScheme.primary, // Sleek black/charcoal
                       letterSpacing: 6.0,
                     ),
                   ),
@@ -128,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black45,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                       letterSpacing: 2.0,
                     ),
                   ),
@@ -149,11 +149,11 @@ class MainPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Hotify Home', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E1E24))),
+        title: Text('Hotify Home', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
       ),
       body: Center(
         child: Column(
@@ -167,15 +167,15 @@ class MainPlaceholder extends StatelessWidget {
                 height: 100,
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               'Welcome to Hotify!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E1E24)),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'Splash transition complete. Ready for step 2.',
-              style: TextStyle(color: Colors.black45),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
             ),
           ],
         ),

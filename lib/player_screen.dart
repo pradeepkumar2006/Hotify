@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'services/audio_service.dart';
+import 'services/download_service.dart';
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key});
@@ -62,7 +63,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         valueListenable: AudioService().currentSongNotifier,
         builder: (context, song, child) {
           if (song == null) {
-            return const Center(child: Text("No song playing", style: TextStyle(color: Colors.white)));
+            return Center(child: Text("No song playing", style: TextStyle(color: Colors.white)));
           }
 
           final String title = song['title'] ?? 'Unknown';
@@ -112,9 +113,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 shape: BoxShape.circle,
                                 color: Colors.white.withValues(alpha: 0.08),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.keyboard_arrow_left_rounded,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 size: 24,
                               ),
                             ),
@@ -124,7 +125,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             style: GoogleFonts.outfit(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -177,8 +178,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                image: artistPicProvider,
                                fit: BoxFit.cover,
                                errorBuilder: (context, error, stackTrace) => Container(
-                                 color: const Color(0xFF1E1E24),
-                                 child: const Icon(
+                                 color: Theme.of(context).colorScheme.primary,
+                                 child: Icon(
                                    Icons.music_note,
                                    size: 80,
                                    color: Color(0xFFE5B3B3),
@@ -200,12 +201,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                              style: GoogleFonts.outfit(
                                fontSize: 24,
                                fontWeight: FontWeight.bold,
-                               color: Colors.white,
+                               color: Theme.of(context).colorScheme.surface,
                              ),
                              maxLines: 1,
                              overflow: TextOverflow.ellipsis,
                            ),
-                           const SizedBox(height: 6),
+                           SizedBox(height: 6),
                            Text(
                              artist,
                              textAlign: TextAlign.center,
@@ -266,7 +267,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                        },
                                      ),
                                    ),
-                                   const SizedBox(height: 2),
+                                   SizedBox(height: 2),
                                    Padding(
                                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
                                      child: Row(
@@ -326,9 +327,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 shape: BoxShape.circle,
                                 color: Colors.white.withValues(alpha: 0.08),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.skip_previous_rounded,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 size: 26,
                               ),
                             ),
@@ -346,23 +347,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                     child: Container(
                                       width: 68,
                                       height: 68,
-                                      decoration: const BoxDecoration(
+                                      decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: Color(0xFFE5B3B3), // Accent color matching our theme
                                       ),
                                       child: Center(
                                         child: isLoading
-                                            ? const SizedBox(
+                                            ? SizedBox(
                                                 width: 22,
                                                 height: 22,
                                                 child: CircularProgressIndicator(
                                                   strokeWidth: 2.0,
-                                                  color: Color(0xFF1E1E24),
+                                                  color: Theme.of(context).colorScheme.primary,
                                                 ),
                                               )
                                             : Icon(
                                                 isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                                color: const Color(0xFF1E1E24),
+                                                color: Theme.of(context).colorScheme.primary,
                                                 size: 38,
                                               ),
                                       ),
@@ -383,31 +384,59 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                 shape: BoxShape.circle,
                                 color: Colors.white.withValues(alpha: 0.08),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.skip_next_rounded,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 size: 26,
                               ),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.queue_music_rounded,
-                              color: Colors.white54,
-                            ),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Queue feature coming soon!"),
-                                  duration: Duration(milliseconds: 800),
-                                ),
+                          ValueListenableBuilder<Set<String>>(
+                            valueListenable: DownloadService().downloadingIdsNotifier,
+                            builder: (context, downloadingIds, _) {
+                              return ValueListenableBuilder<List<Map<String, dynamic>>>(
+                                valueListenable: DownloadService().downloadedSongsNotifier,
+                                builder: (context, downloadedSongs, _) {
+                                  final isDownloading = DownloadService().isDownloading(song);
+                                  final isDownloaded = DownloadService().isDownloaded(song);
+                                  
+                                  if (isDownloading) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(12.0),
+                                      child: SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE5B3B3)),
+                                      ),
+                                    );
+                                  }
+                                  
+                                  return IconButton(
+                                    icon: Icon(
+                                      isDownloaded ? Icons.download_done_rounded : Icons.download_rounded,
+                                      color: isDownloaded ? Colors.greenAccent : Colors.white54,
+                                    ),
+                                    onPressed: () {
+                                      if (isDownloaded) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text("Already downloaded!"), duration: Duration(seconds: 1)),
+                                        );
+                                      } else {
+                                        DownloadService().downloadSong(song);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text("Downloading..."), duration: Duration(seconds: 1)),
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
                               );
                             },
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                     ],
                   ),
                 ),
@@ -459,16 +488,16 @@ class NextUpCard extends StatelessWidget {
             color: const Color(0xFFE5B3B3).withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 "Skipping",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold, fontSize: 13),
               ),
               SizedBox(width: 8),
-              Icon(Icons.skip_next_rounded, color: Colors.white, size: 24),
+              Icon(Icons.skip_next_rounded, color: Theme.of(context).colorScheme.surface, size: 24),
             ],
           ),
         ),
@@ -493,13 +522,13 @@ class NextUpCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: const Color(0xFFE5B3B3).withValues(alpha: 0.12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.queue_music_rounded,
                   color: Color(0xFFE5B3B3),
                   size: 16,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -514,7 +543,7 @@ class NextUpCard extends StatelessWidget {
                         letterSpacing: 1.0,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       "$title • $artist",
                       style: GoogleFonts.inter(
@@ -528,7 +557,7 @@ class NextUpCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -539,8 +568,8 @@ class NextUpCard extends StatelessWidget {
                       color: Colors.white30,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(
+                  SizedBox(width: 4),
+                  Icon(
                     Icons.keyboard_arrow_left_rounded,
                     color: Colors.white30,
                     size: 14,

@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(
           content: Text(
             'Firebase is not initialized. Please use Apple/Facebook or Skip to enter as guest.',
-            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold),
           ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
@@ -66,15 +66,15 @@ class _LoginScreenState extends State<LoginScreen> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Color(0xFF00FF83)),
-                  const SizedBox(width: 12),
+                  Icon(Icons.check_circle, color: Color(0xFF00FF83)),
+                  SizedBox(width: 12),
                   Text(
                     'Welcome back, ${userCredential.user?.displayName ?? widget._getUsername(_emailController.text)}!',
                     style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
-              backgroundColor: const Color(0xFF1E1E24),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               duration: const Duration(seconds: 2),
@@ -107,8 +107,8 @@ class _LoginScreenState extends State<LoginScreen> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.redAccent),
-                  const SizedBox(width: 12),
+                  Icon(Icons.error_outline, color: Colors.redAccent),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       message,
@@ -117,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
-              backgroundColor: const Color(0xFF1E1E24),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -147,41 +147,18 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-              );
-            },
-            child: Row(
-              children: [
-                Text(
-                  'Skip',
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFF1E1E24),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(FeatherIcons.arrowRight, color: Color(0xFF1E1E24), size: 16),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-        ],
+        actions: [],
       ),
       body: Container(
         height: double.infinity,
         width: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
               Color(0xFFFAFAFA), // Soft white
-              Color(0xFFF4F5F7), // Soft grey
+              Theme.of(context).scaffoldBackgroundColor, // Soft grey
               Color(0xFFE5E7EB), // Cool grey
             ],
             stops: [0.0, 0.6, 1.0],
@@ -196,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   // Hero Logo from Splash Screen
                   Center(
                     child: Hero(
@@ -211,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                   
                   // Heading
                   Text(
@@ -220,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: GoogleFonts.outfit(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E1E24),
+                      color: Theme.of(context).colorScheme.primary,
                       height: 1.2,
                     ),
                   ),
@@ -230,20 +207,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: GoogleFonts.outfit(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black, // Sleek black
+                      color: Theme.of(context).colorScheme.onSurface, // Sleek black
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Text(
                     'Sign in to explore your personalized audio mixes.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.black54,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
 
                   // Email Field
                   Text(
@@ -251,14 +228,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: GoogleFonts.inter(color: Colors.black),
+                    style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                     decoration: _buildInputDecoration(
                       hintText: 'Enter your email',
                       prefixIcon: FeatherIcons.mail,
@@ -274,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Password Field
                   Row(
@@ -285,16 +262,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87),
                         ),
                       ),
                       GestureDetector(
                         onTap: () {
                           // Handle Forgot Password
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text('Password reset link sent to your email.'),
-                              backgroundColor: Color(0xFF1E1E24),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                             ),
                           );
                         },
@@ -303,17 +280,17 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Colors.black,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
-                    style: GoogleFonts.inter(color: Colors.black),
+                    style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                     decoration: _buildInputDecoration(
                       hintText: 'Enter your password',
                       prefixIcon: FeatherIcons.lock,
@@ -340,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
 
                   // Login Button
                   SizedBox(
@@ -348,9 +325,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E1E24),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFF1E1E24).withValues(alpha: 0.5),
+                        disabledBackgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28),
                         ),
@@ -358,7 +335,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         shadowColor: Colors.black.withValues(alpha: 0.2),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 24,
                               height: 24,
                               child: CircularProgressIndicator(
@@ -376,28 +353,28 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
 
                   // Divider
                   Row(
                     children: [
-                      const Expanded(child: Divider(color: Colors.black12, thickness: 1)),
+                      Expanded(child: Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12), thickness: 1)),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Text(
                           'OR CONNECT WITH',
                           style: GoogleFonts.inter(
                             fontSize: 11,
-                            color: Colors.black38,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.0,
                           ),
                         ),
                       ),
-                      const Expanded(child: Divider(color: Colors.black12, thickness: 1)),
+                      Expanded(child: Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12), thickness: 1)),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
 
                   // Social Logins
                   Row(
@@ -408,13 +385,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         label: 'G',
                         onTap: () => _handleSocialLogin('Google'),
                       ),
-                      const SizedBox(width: 20),
+                      SizedBox(width: 20),
                       _buildSocialButton(
                         icon: Icons.apple,
                         label: '',
                         onTap: () => _handleSocialLogin('Apple'),
                       ),
-                      const SizedBox(width: 20),
+                      SizedBox(width: 20),
                       _buildSocialButton(
                         icon: Icons.facebook,
                         label: '',
@@ -422,7 +399,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
 
                   // Bottom Sign Up link
                   Row(
@@ -430,7 +407,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         "Don't have an account? ",
-                        style: GoogleFonts.inter(color: Colors.black54, fontSize: 14),
+                        style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 14),
                       ),
                       GestureDetector(
                         onTap: () {
@@ -441,7 +418,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Text(
                           'Sign Up',
                           style: GoogleFonts.inter(
-                            color: Colors.black,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             decoration: TextDecoration.underline,
@@ -450,7 +427,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                 ],
               ),
             ),
@@ -467,27 +444,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: GoogleFonts.inter(color: Colors.black38, fontSize: 14),
-      prefixIcon: Icon(prefixIcon, color: Colors.black45, size: 20),
+      hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 14),
+      prefixIcon: Icon(prefixIcon, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45), size: 20),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.black12),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.black, width: 1.5),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.0),
+        borderSide: BorderSide(color: Colors.redAccent, width: 1.0),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        borderSide: BorderSide(color: Colors.redAccent, width: 1.5),
       ),
       errorStyle: GoogleFonts.inter(color: Colors.redAccent, fontSize: 12),
     );
@@ -506,8 +483,8 @@ class _LoginScreenState extends State<LoginScreen> {
         height: 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white,
-          border: Border.all(color: Colors.black12),
+          color: Theme.of(context).colorScheme.surface,
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -523,10 +500,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: GoogleFonts.outfit(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1E1E24),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 )
-              : Icon(icon, color: const Color(0xFF1E1E24), size: 24),
+              : Icon(icon, color: Theme.of(context).colorScheme.primary, size: 24),
         ),
       ),
     );
@@ -538,7 +515,7 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(
           content: Text(
             'Firebase is not initialized. Google Sign-In is unavailable. Please click Apple/Facebook or Skip to enter as guest.',
-            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold),
           ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
@@ -575,15 +552,15 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Color(0xFF00FF83)),
-                const SizedBox(width: 12),
+                Icon(Icons.check_circle, color: Color(0xFF00FF83)),
+                SizedBox(width: 12),
                 Text(
                   'Welcome, ${userCredential.user?.displayName ?? "Music Lover"}!',
                   style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-            backgroundColor: const Color(0xFF1E1E24),
+            backgroundColor: Theme.of(context).colorScheme.primary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             duration: const Duration(seconds: 2),
@@ -619,9 +596,9 @@ class _LoginScreenState extends State<LoginScreen> {
       SnackBar(
         content: Text(
           'Logging in with $provider...',
-          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+          style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF1E1E24),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
     // Simulate navigation to home

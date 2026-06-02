@@ -38,7 +38,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         SnackBar(
           content: Text(
             'Firebase is not initialized. Registration is unavailable. Please use Skip on the login screen to enter as guest.',
-            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold),
           ),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
@@ -76,15 +76,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Color(0xFF00FF83)),
-                  const SizedBox(width: 12),
+                  Icon(Icons.check_circle, color: Color(0xFF00FF83)),
+                  SizedBox(width: 12),
                   Text(
                     'Welcome to Hotify, ${_nameController.text.trim()}!',
                     style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
-              backgroundColor: const Color(0xFF1E1E24),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               duration: const Duration(seconds: 2),
@@ -116,8 +116,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.redAccent),
-                  const SizedBox(width: 12),
+                  Icon(Icons.error_outline, color: Colors.redAccent),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       message,
@@ -126,7 +126,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ],
               ),
-              backgroundColor: const Color(0xFF1E1E24),
+              backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -154,13 +154,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: Container(
         height: double.infinity,
         width: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
               Color(0xFFFAFAFA), // Soft white
-              Color(0xFFF4F5F7), // Soft grey
+              Theme.of(context).scaffoldBackgroundColor, // Soft grey
               Color(0xFFE5E7EB), // Cool grey
             ],
             stops: [0.0, 0.6, 1.0],
@@ -179,11 +179,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Align(
                     alignment: Alignment.topLeft,
                     child: IconButton(
-                      icon: const Icon(FeatherIcons.arrowLeft, color: Colors.black87),
+                      icon: Icon(FeatherIcons.arrowLeft, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87)),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
 
                   // Hero Logo
                   Center(
@@ -199,7 +199,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Heading
                   Text(
@@ -208,19 +208,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: GoogleFonts.outfit(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Sign up to start your original audio mixing journey.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.black54,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
 
                   // Full Name Field
                   Text(
@@ -228,14 +228,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextFormField(
                     controller: _nameController,
                     keyboardType: TextInputType.name,
-                    style: GoogleFonts.inter(color: Colors.black),
+                    style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                     decoration: _buildInputDecoration(
                       hintText: 'Enter your full name',
                       prefixIcon: FeatherIcons.user,
@@ -250,7 +250,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Email Field
                   Text(
@@ -258,14 +258,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    style: GoogleFonts.inter(color: Colors.black),
+                    style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                     decoration: _buildInputDecoration(
                       hintText: 'Enter your email',
                       prefixIcon: FeatherIcons.mail,
@@ -281,7 +281,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Password Field
                   Text(
@@ -289,14 +289,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
-                    style: GoogleFonts.inter(color: Colors.black),
+                    style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                     decoration: _buildInputDecoration(
                       hintText: 'Create a password',
                       prefixIcon: FeatherIcons.lock,
@@ -308,7 +308,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                         child: Icon(
                           _isPasswordVisible ? FeatherIcons.eye : FeatherIcons.eyeOff,
-                          color: Colors.black45,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                           size: 20,
                         ),
                       ),
@@ -323,7 +323,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Confirm Password Field
                   Text(
@@ -331,14 +331,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: !_isConfirmPasswordVisible,
-                    style: GoogleFonts.inter(color: Colors.black),
+                    style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface),
                     decoration: _buildInputDecoration(
                       hintText: 'Retype your password',
                       prefixIcon: FeatherIcons.shield,
@@ -350,7 +350,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                         child: Icon(
                           _isConfirmPasswordVisible ? FeatherIcons.eye : FeatherIcons.eyeOff,
-                          color: Colors.black45,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                           size: 20,
                         ),
                       ),
@@ -365,7 +365,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: 32),
 
                   // Register Button
                   SizedBox(
@@ -373,9 +373,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _handleSignUp,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E1E24),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFF1E1E24).withValues(alpha: 0.5),
+                        disabledBackgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28),
                         ),
@@ -383,7 +383,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         shadowColor: Colors.black.withValues(alpha: 0.2),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 24,
                               height: 24,
                               child: CircularProgressIndicator(
@@ -401,7 +401,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
 
                   // Bottom navigation to Login
                   Row(
@@ -409,7 +409,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     children: [
                       Text(
                         "Already have an account? ",
-                        style: GoogleFonts.inter(color: Colors.black54, fontSize: 14),
+                        style: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 14),
                       ),
                       GestureDetector(
                         onTap: () {
@@ -418,7 +418,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: Text(
                           'Log In',
                           style: GoogleFonts.inter(
-                            color: Colors.black,
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                             decoration: TextDecoration.underline,
@@ -427,7 +427,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24),
                 ],
               ),
             ),
@@ -444,27 +444,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: GoogleFonts.inter(color: Colors.black38, fontSize: 14),
-      prefixIcon: Icon(prefixIcon, color: Colors.black45, size: 20),
+      hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 14),
+      prefixIcon: Icon(prefixIcon, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45), size: 20),
       suffixIcon: suffixIcon,
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 20.0),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.black12),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.black, width: 1.5),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.0),
+        borderSide: BorderSide(color: Colors.redAccent, width: 1.0),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        borderSide: BorderSide(color: Colors.redAccent, width: 1.5),
       ),
       errorStyle: GoogleFonts.inter(color: Colors.redAccent, fontSize: 12),
     );

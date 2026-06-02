@@ -9,6 +9,8 @@ import 'login_screen.dart';
 import 'home_screen.dart';
 import 'services/audio_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'utils/theme_notifier.dart';
+import 'connectivity_wrapper.dart';
 
 // bool firebaseInitialized = false; // moved to init_status.dart
 
@@ -120,25 +122,52 @@ class HotifyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     debugPrint('Building HotifyApp');
-    return MaterialApp(
-      title: 'Hotify Open Audio',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF4F5F7), // Soft light grey
-        primaryColor: Colors.black,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.black,
-          primary: Colors.black,
-          onPrimary: Colors.white,
-          secondary: const Color(0xFF1E1E24), // Dark charcoal
-          surface: Colors.white,
-          onSurface: const Color(0xFF111111),
-        ),
-        textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
-      ),
-      home: const SplashScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (context, currentThemeMode, child) {
+        return MaterialApp(
+          title: 'Hotify Open Audio',
+          debugShowCheckedModeBanner: false,
+          themeMode: currentThemeMode,
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            scaffoldBackgroundColor: const Color(0xFFF4F5F7), // Soft light grey
+            primaryColor: Colors.black,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.black,
+              primary: Colors.black,
+              onPrimary: Colors.white,
+              secondary: const Color(0xFF1E1E24), // Dark charcoal
+              surface: Colors.white,
+              onSurface: const Color(0xFF111111),
+            ),
+            textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
+            iconTheme: const IconThemeData(color: Color(0xFF1E1E24)),
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            scaffoldBackgroundColor: const Color(0xFF121212), // Deep dark grey
+            primaryColor: Colors.white,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.white,
+              brightness: Brightness.dark,
+              primary: Colors.white,
+              onPrimary: Colors.black,
+              secondary: const Color(0xFFEBECEF), // Light grey
+              surface: const Color(0xFF1E1E24), // Darker surface
+              onSurface: Colors.white,
+            ),
+            textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).apply(
+              bodyColor: Colors.white,
+              displayColor: Colors.white,
+            ),
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          home: const SplashScreen(),
+        );
+      },
     );
   }
 }
@@ -187,7 +216,7 @@ class _AuthGateState extends State<AuthGate> {
   Widget build(BuildContext context) {
     if (_bypassed) {
       debugPrint('AuthGate: bypassed to HomeScreen');
-      return const HomeScreen();
+      return const ConnectivityWrapper(child: HomeScreen());
     }
 
     if (Firebase.apps.isEmpty) {
@@ -249,7 +278,7 @@ class _AuthGateState extends State<AuthGate> {
         }
         if (snapshot.hasData) {
           debugPrint(' AuthGate: User logged in, navigating to HomeScreen');
-          return const HomeScreen();
+          return const ConnectivityWrapper(child: HomeScreen());
         }
         debugPrint('AuthGate: No user, showing LoginScreen');
         return const LoginScreen();

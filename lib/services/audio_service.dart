@@ -5,6 +5,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart' as audio_service_pkg;
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'download_service.dart';
 
 class AudioService extends audio_service_pkg.BaseAudioHandler {
   // Singleton pattern
@@ -97,6 +98,7 @@ class AudioService extends audio_service_pkg.BaseAudioHandler {
     if (_initialized) return;
     _initialized = true;
     _loadLiked();
+    await DownloadService().init();
     // Initialise audio_service with notification config – MUST be awaited
     await audio_service_pkg.AudioService.init(
       builder: () => this,
@@ -177,6 +179,22 @@ class AudioService extends audio_service_pkg.BaseAudioHandler {
     isLoadingNotifier.value = true;
     
     try {
+      // Check if song is downloaded
+      final String? localPath = DownloadService().getDownloadedSongPath(song);
+      if (localPath != null && File(localPath).existsSync()) {
+        debugPrint("Playing downloaded song from local path: $localPath");
+        await player.setFilePath(localPath);
+        player.play();
+        isLoadingNotifier.value = false;
+        
+        // Update notification metadata
+        await setMediaItem(
+          song,
+          artUrl: song['downloaded_cover'] ?? song['img'],
+        );
+        return;
+      }
+
       // 1. Search for song on JioSaavn API to get streamable MP3 URL
       final String query = "${song['title']} ${song['artist']}";
       final String searchUrl = "https://saavnapi-nine.vercel.app/song/?query=${Uri.encodeComponent(query)}";
@@ -188,9 +206,20 @@ class AudioService extends audio_service_pkg.BaseAudioHandler {
           final bestMatch = decoded[0];
           final String? audioUrl = bestMatch['media_url'];
           
+          // Extract album art URL from JioSaavn API response
+          final String? albumArtUrl = bestMatch['image'] as String?;
+          // Extract duration from API (in seconds)
+          final songDuration = bestMatch['duration'] != null
+              ? Duration(seconds: int.tryParse(bestMatch['duration'].toString()) ?? 0)
+              : Duration.zero;
+          
           if (audioUrl != null && audioUrl.isNotEmpty) {
-            // Set the audio source and play
-            await setMediaItem(song);
+            // Set the media item with album art from API for notification
+            await setMediaItem(
+              song,
+              artUrl: albumArtUrl,
+              songDuration: songDuration,
+            );
             await player.setUrl(audioUrl);
             player.play();
             isLoadingNotifier.value = false;
@@ -235,13 +264,21 @@ class AudioService extends audio_service_pkg.BaseAudioHandler {
     player.dispose();
   }
   // Helper to update media item for notification
-  Future<void> setMediaItem(Map<String, dynamic> song) async {
+  Future<void> setMediaItem(Map<String, dynamic> song, {String? artUrl, Duration? songDuration}) async {
+    // Prefer the album art URL from JioSaavn API, fallback to song['cover'] or song['img']
+    Uri? artUri;
+    if (artUrl != null && artUrl.isNotEmpty) {
+      artUri = Uri.parse(artUrl);
+    } else if (song['cover'] != null && song['cover'].toString().startsWith('http')) {
+      artUri = Uri.parse(song['cover']);
+    }
+
     final mediaItem = audio_service_pkg.MediaItem(
       id: song['id']?.toString() ?? '',
       title: song['title'] ?? '',
       artist: song['artist'] ?? '',
-      artUri: song['cover'] != null ? Uri.parse(song['cover']) : null,
-      duration: song['duration'] != null ? Duration(milliseconds: song['duration']) : Duration.zero,
+      artUri: artUri,
+      duration: songDuration ?? (song['duration'] != null ? Duration(milliseconds: song['duration']) : Duration.zero),
     );
     this.mediaItem.add(mediaItem);
   }
@@ -271,5 +308,13 @@ class AudioService extends audio_service_pkg.BaseAudioHandler {
   @override
   Future<void> skipToPrevious() async {
     previousSong();
+  }
+
+  /// Called when the user swipes the app away from recents.
+  /// Stops playback and removes the notification automatically.
+  @override
+  Future<void> onTaskRemoved() async {
+    await player.stop();
+    await super.stop();
   }
 }

@@ -52,7 +52,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF2C2C2C), Color(0xFF121212)],
             begin: Alignment.topCenter,
@@ -66,16 +66,16 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 40),
+                SizedBox(height: 40),
                 Text(
                   'Create Playlist',
                   style: GoogleFonts.outfit(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                 ),
-                const SizedBox(height: 40),
+                SizedBox(height: 40),
                 // Tap to pick image (profile picture cover)
                 GestureDetector(
                   onTap: _pickImage,
@@ -94,7 +94,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                           : null,
                     ),
                     child: _imagePath == null
-                        ? const Column(
+                        ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
@@ -112,7 +112,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                         : null,
                   ),
                 ),
-                const SizedBox(height: 40),
+                SizedBox(height: 40),
                 // Name Input
                 Align(
                   alignment: Alignment.centerLeft,
@@ -132,7 +132,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                   decoration: const InputDecoration(
                     enabledBorder: UnderlineInputBorder(
@@ -143,7 +143,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 // Description Input
                 Align(
                   alignment: Alignment.centerLeft,
@@ -162,7 +162,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                   cursorColor: Colors.white,
                   style: GoogleFonts.inter(
                     fontSize: 16,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                   ),
                   decoration: const InputDecoration(
                     enabledBorder: UnderlineInputBorder(
@@ -175,7 +175,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                     hintStyle: TextStyle(color: Colors.white30, fontSize: 15),
                   ),
                 ),
-                const SizedBox(height: 56),
+                SizedBox(height: 56),
                 // Row buttons Cancel / Create
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -192,14 +192,14 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                         child: Text(
                           'Cancel',
                           style: GoogleFonts.inter(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 20),
+                    SizedBox(width: 20),
                     // Create button
                     GestureDetector(
                       onTap: () {
@@ -216,7 +216,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white, // Sleek solid white matching the theme
+                          color: Theme.of(context).colorScheme.surface, // Sleek solid white matching the theme
                           borderRadius: BorderRadius.circular(24),
                         ),
                         child: Text(

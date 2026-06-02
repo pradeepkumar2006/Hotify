@@ -16,6 +16,7 @@ import 'player_screen.dart';
 import 'artist_details_screen.dart';
 import 'create_playlist_screen.dart';
 import 'playlist_detail_screen.dart';
+import 'offline_music_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,13 +103,13 @@ class _HomeScreenState extends State<HomeScreen> {
       return CircleAvatar(
         radius: radius,
         backgroundImage: provider,
-        backgroundColor: const Color(0xFF1E1E24),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       );
     }
     return CircleAvatar(
       radius: radius,
-      backgroundColor: const Color(0xFF1E1E24),
-      child: Icon(FeatherIcons.user, color: Colors.white, size: iconSize),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      child: Icon(FeatherIcons.user, color: Theme.of(context).colorScheme.surface, size: iconSize),
     );
   }
 
@@ -123,6 +124,8 @@ class _HomeScreenState extends State<HomeScreen> {
     'Classical / Instrumental': 2,
     'SAD': 1,
   };
+  
+  Map<String, int> _artistPlayCounts = {};
 
   List<Map<String, dynamic>> get _topGenres {
     final sorted = List<Map<String, dynamic>>.from(_genreCards);
@@ -298,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -317,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -343,15 +346,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Icon(
                             Icons.music_note_rounded,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             size: 28,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,14 +364,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: GoogleFonts.outfit(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1E1E24),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             Text(
                               '${genreSongs.length} Songs in Library',
                               style: GoogleFonts.inter(
                                 fontSize: 13,
-                                color: Colors.black54,
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                               ),
                             ),
                           ],
@@ -377,7 +380,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                const Divider(),
+                Divider(),
                 // Songs list
                 Expanded(
                   child: ListView.builder(
@@ -390,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E24),
+                            color: Theme.of(context).colorScheme.primary,
                             borderRadius: BorderRadius.circular(6),
                             image: DecorationImage(
                               image: _getSongImageProvider(song),
@@ -403,7 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: const Color(0xFF1E1E24),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -412,12 +415,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           song['artist']!,
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: Colors.black54,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                           ),
                         ),
-                        trailing: const Icon(
+                        trailing: Icon(
                           Icons.play_arrow,
-                          color: Color(0xFF1E1E24),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                         onTap: () {
                           Navigator.pop(context); // close sheet
@@ -463,6 +466,11 @@ class _HomeScreenState extends State<HomeScreen> {
     {'name': 'Srikanth Deva', 'image': 'assets/srikanth_deva.png'},
     {'name': 'Vijay Antony', 'image': 'assets/vijay_antony.png'},
     {'name': 'Harris Jayaraj', 'image': 'assets/harris_jayaraj.png'},
+    {'name': 'DSP', 'image': 'assets/dsp.png'},
+    {'name': 'D Imman', 'image': 'assets/imman.png'},
+    {'name': 'SN Arunagiri', 'image': 'assets/sn_arunagiri.png'},
+    {'name': 'Ilaiyaraaja', 'image': 'assets/ilaiyaraaja.png'},
+    {'name': 'Karthik Raja', 'image': 'assets/karthik_raja.png'},
   ];
 
   String _getArtistPicture(String artistName, String fallbackImageUrl) {
@@ -486,6 +494,16 @@ class _HomeScreenState extends State<HomeScreen> {
       'srikanthdeva': 'assets/srikanth_deva.png',
       'vijayantony': 'assets/vijay_antony.png',
       'harrisjayaraj': 'assets/harris_jayaraj.png',
+      'dsp': 'assets/dsp.png',
+      'devisriprasad': 'assets/dsp.png',
+      'dimman': 'assets/imman.png',
+      'imman': 'assets/imman.png',
+      'snarunagiri': 'assets/sn_arunagiri.png',
+      'arunagiri': 'assets/sn_arunagiri.png',
+      'ilaiyaraaja': 'assets/ilaiyaraaja.png',
+      'ilayaraja': 'assets/ilaiyaraaja.png',
+      'raja': 'assets/ilaiyaraaja.png',
+      'karthikraja': 'assets/karthik_raja.png',
     };
 
     for (final entry in artistImages.entries) {
@@ -532,12 +550,12 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E24),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           title,
           style: GoogleFonts.outfit(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -548,7 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('CLOSE', style: TextStyle(color: Colors.white54)),
+            child: Text('CLOSE', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -557,14 +575,14 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE5B3B3),
-              foregroundColor: const Color(0xFF1E1E24),
+              foregroundColor: Theme.of(context).colorScheme.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
             child: Text(
               actionLabel,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -577,13 +595,13 @@ class _HomeScreenState extends State<HomeScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.auto_awesome, color: Color(0xFFE5B3B3), size: 20),
-            const SizedBox(width: 12),
+            Icon(Icons.auto_awesome, color: Color(0xFFE5B3B3), size: 20),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
                 style: GoogleFonts.inter(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -591,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF1E1E24),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 3),
@@ -610,8 +628,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E1E24), Color(0xFF2C2C35)],
+              gradient: LinearGradient(
+                colors: [Theme.of(context).colorScheme.primary, Color(0xFF2C2C35)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -627,7 +645,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 50,
                   height: 50,
                   child: CircularProgressIndicator(
@@ -637,16 +655,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 Text(
                   'Casting Shuffle Magic... 🪄',
                   style: GoogleFonts.outfit(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Reading your musical stars...',
                   style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
@@ -827,7 +845,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -849,7 +867,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 4,
                       margin: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.black12,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -868,15 +886,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: const Color(0xFFF2994A),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Icon(
                                 Icons.auto_awesome,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 size: 28,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -886,14 +904,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                   style: GoogleFonts.outfit(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF1E1E24),
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                                 Text(
                                   '${_magicPlaylist.length} Songs Shuffled',
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
-                                    color: Colors.black54,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                   ),
                                 ),
                               ],
@@ -902,7 +920,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    const Divider(),
+                    Divider(),
                     // Songs list
                     Expanded(
                       child: ListView.builder(
@@ -919,7 +937,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               width: 48,
                               height: 48,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E1E24),
+                                color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(6),
                                 image: DecorationImage(
                                   image: _getSongImageProvider(song),
@@ -934,7 +952,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontSize: 14,
                                 color: isCurrent
                                     ? const Color(0xFFF2994A)
-                                    : const Color(0xFF1E1E24),
+                                    : Theme.of(context).colorScheme.primary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -947,17 +965,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? const Color(
                                         0xFFF2994A,
                                       ).withValues(alpha: 0.8)
-                                    : Colors.black54,
+                                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                               ),
                             ),
                             trailing: isCurrent
-                                ? const Icon(
+                                ? Icon(
                                     Icons.volume_up_rounded,
                                     color: Color(0xFFF2994A),
                                   )
-                                : const Icon(
+                                : Icon(
                                     Icons.play_arrow,
-                                    color: Color(0xFF1E1E24),
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                             onTap: () {
                               Navigator.pop(context); // close sheet
@@ -1053,6 +1071,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final Map<String, dynamic> dataToSave = {
         'weekly': _weeklyPlayStats,
         'heatmap': _heatmapPlayStats,
+        'artists': _artistPlayCounts,
       };
       await file.writeAsString(json.encode(dataToSave));
     } catch (e) {
@@ -1081,6 +1100,12 @@ class _HomeScreenState extends State<HomeScreen> {
             }
             if (decoded.containsKey('heatmap')) {
               _heatmapPlayStats = (decoded['heatmap'] as Map).map(
+                (key, value) =>
+                    MapEntry(key.toString(), int.parse(value.toString())),
+              );
+            }
+            if (decoded.containsKey('artists')) {
+              _artistPlayCounts = (decoded['artists'] as Map).map(
                 (key, value) =>
                     MapEntry(key.toString(), int.parse(value.toString())),
               );
@@ -1153,6 +1178,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (song != null) {
       final genre = _getSongGenre(song);
       _genrePlayCounts[genre] = (_genrePlayCounts[genre] ?? 0) + 1;
+      
+      final String artist = song['artist'] ?? 'Unknown Artist';
+      if (artist != 'Unknown Artist') {
+        _artistPlayCounts[artist] = (_artistPlayCounts[artist] ?? 0) + 1;
+      }
+
       _incrementTodayPlayCount();
     }
     if (mounted) {
@@ -1211,10 +1242,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // If we’re still loading the JSON (or it failed), show a simple spinner.
     if (_isLoadingSongs) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF4F5F7),
-        body: const Center(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1E1E24)),
+            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
           ),
         ),
       );
@@ -1223,19 +1254,19 @@ class _HomeScreenState extends State<HomeScreen> {
     // If the song list is empty after loading, give a friendly hint.
     if (_allSongs.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF4F5F7),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
           child: Text(
             'No songs found. Check that assets/tamil_songs.json is present and listed in pubspec.yaml.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.black54),
+            style: GoogleFonts.inter(fontSize: 14, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54)),
           ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Main scrollable contents using IndexedStack to preserve state
@@ -1271,7 +1302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: 8.0,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(36),
                       boxShadow: [
                         BoxShadow(
@@ -1301,7 +1332,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(0xFF1E1E24)
+                                  ? Theme.of(context).colorScheme.primary
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -1312,15 +1343,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                   item['icon'] as IconData,
                                   color: isSelected
                                       ? Colors.white
-                                      : const Color(0xFF1E1E24),
+                                      : Theme.of(context).colorScheme.primary,
                                   size: 22,
                                 ),
                                 if (isSelected) ...[
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Text(
                                     item['label'] as String,
                                     style: GoogleFonts.inter(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
                                     ),
@@ -1366,21 +1397,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E1E24),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               Row(
                 children: [
+
                   IconButton(
-                    icon: const Icon(
-                      FeatherIcons.bell,
-                      color: Color(0xFF1E1E24),
+                    icon: Icon(
+                      FeatherIcons.download,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const OfflineMusicScreen(),
+                        ),
+                      );
+                    },
                   ),
-
-                  const SizedBox(width: 8),
+                  SizedBox(width: 4),
                   GestureDetector(
                     onTap: () {
                       Navigator.of(context)
@@ -1405,15 +1442,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // Hello Melophile Greeting Card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E1E24), Color(0xFF2C2C35)],
+              gradient: LinearGradient(
+                colors: [Theme.of(context).colorScheme.primary, Color(0xFF2C2C35)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1437,11 +1474,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         'Ready to explore some amazing tunes today?',
                         style: GoogleFonts.inter(
@@ -1458,7 +1495,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.white.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.music_note_rounded,
                     color: Color(0xFFE5B3B3),
                     size: 24,
@@ -1468,7 +1505,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // 1. Artists Section is now at the top
           Text(
@@ -1476,10 +1513,10 @@ class _HomeScreenState extends State<HomeScreen> {
             style: GoogleFonts.outfit(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E1E24),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           SizedBox(
             height: 98,
             child: ListView.builder(
@@ -1501,13 +1538,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           backgroundImage: _getImageProvider(artist['image']!),
                           backgroundColor: Colors.grey.shade200,
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         Text(
                           artist['name']!,
                           style: GoogleFonts.inter(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1E1E24),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ],
@@ -1518,7 +1555,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // 2. Recently Played is under the Artists Section
           Text(
@@ -1526,15 +1563,15 @@ class _HomeScreenState extends State<HomeScreen> {
             style: GoogleFonts.outfit(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E1E24),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _isLoadingSongs
-              ? const SizedBox(
+              ? SizedBox(
                   height: 260,
                   child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFF1E1E24)),
+                    child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
                   ),
                 )
               : SizedBox(
@@ -1591,7 +1628,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   aspectRatio: 1.0,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF1E1E24),
+                                      color: Theme.of(context).colorScheme.primary,
                                       borderRadius: BorderRadius.circular(12),
                                       image: DecorationImage(
                                         image: _getSongImageProvider(album),
@@ -1615,13 +1652,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           right: 8,
                                           child: Container(
                                             padding: const EdgeInsets.all(4),
-                                            decoration: const BoxDecoration(
+                                            decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color: Colors.black54,
+                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                             ),
-                                            child: const Icon(
+                                            child: Icon(
                                               Icons.play_arrow,
-                                              color: Colors.white,
+                                              color: Theme.of(context).colorScheme.surface,
                                               size: 16,
                                             ),
                                           ),
@@ -1630,11 +1667,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                SizedBox(height: 8),
                                 Text(
                                   album['title']!,
                                   style: GoogleFonts.inter(
-                                    color: const Color(0xFF1E1E24),
+                                    color: Theme.of(context).colorScheme.primary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
@@ -1644,7 +1681,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   album['artist']!,
                                   style: GoogleFonts.inter(
-                                    color: Colors.black54,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                     fontSize: 11,
                                   ),
                                   maxLines: 1,
@@ -1659,7 +1696,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
           // 3. Explore Genres section
           Text(
@@ -1667,10 +1704,10 @@ class _HomeScreenState extends State<HomeScreen> {
             style: GoogleFonts.outfit(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E1E24),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           SizedBox(
             height: 150,
             child: ListView.builder(
@@ -1734,7 +1771,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Text(
                                 card['label']!,
                                 style: GoogleFonts.outfit(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
                                   letterSpacing: 0.5,
@@ -1760,7 +1797,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Magic Shuffle section heading
           Text(
@@ -1768,10 +1805,10 @@ class _HomeScreenState extends State<HomeScreen> {
             style: GoogleFonts.outfit(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E1E24),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // New Orange Shuffle Magic Widget (Matches user screenshot)
           ValueListenableBuilder<Map<String, dynamic>?>(
@@ -1847,7 +1884,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            SizedBox(width: 16),
                             // Title & artist info
                             Expanded(
                               child: Column(
@@ -1858,12 +1895,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: GoogleFonts.outfit(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 4),
+                                  SizedBox(height: 4),
                                   Text(
                                     songToShow['artist'] ??
                                         'Click play to start magic',
@@ -1879,16 +1916,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             // Spotify-like Logo icon
                             Container(
                               width: 32,
                               height: 32,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Icon(
                                   Icons
                                       .wifi_tethering_rounded, // Resembles the soundwaves/logo
@@ -1899,23 +1936,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         // Lower row: Previous, Play/Pause, Next, and More options
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             // Previous song button
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.skip_previous_rounded,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                               iconSize: 32,
                               onPressed: () {
                                 _magicPreviousSong();
                               },
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             // White circle Play/Pause button
                             GestureDetector(
                               onTap: () {
@@ -1924,9 +1961,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Container(
                                 width: 48,
                                 height: 48,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                 ),
                                 child: Center(
                                   child: Icon(
@@ -1939,12 +1976,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             // Next song button
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.skip_next_rounded,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                               ),
                               iconSize: 32,
                               onPressed: () {
@@ -1957,15 +1994,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               onPressed: () {
                                 _showAllShuffledSongsSheet();
                               },
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.playlist_play_rounded,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 size: 16,
                               ),
                               label: Text(
                                 'More',
                                 style: GoogleFonts.inter(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -1993,7 +2030,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
 
-          const SizedBox(height: 28),
+          SizedBox(height: 28),
 
           // Daily Mix section heading
           Row(
@@ -2007,27 +2044,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: GoogleFonts.outfit(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E1E24),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     'Based on your recent vibes',
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: Colors.black54,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                     ),
                   ),
                 ],
               ),
-              const Icon(
+              Icon(
                 Icons.bolt_rounded,
                 color: Color(0xFFF2994A),
                 size: 24,
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
 
           // Dynamic Daily Mix cards
           SizedBox(
@@ -2088,8 +2125,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       errorBuilder:
                                           (context, error, stackTrace) =>
                                               Container(
-                                                color: const Color(0xFF1E1E24),
-                                                child: const Icon(
+                                                color: Theme.of(context).colorScheme.primary,
+                                                child: Icon(
                                                   Icons.music_note,
                                                   color: Colors.white24,
                                                   size: 40,
@@ -2126,13 +2163,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           style: GoogleFonts.outfit(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w900,
-                                            color: Colors.white,
+                                            color: Theme.of(context).colorScheme.surface,
                                             letterSpacing: 0.5,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        const SizedBox(height: 2),
+                                        SizedBox(height: 2),
                                         Text(
                                           'Daily Mix ${index + 1}',
                                           style: GoogleFonts.inter(
@@ -2156,9 +2193,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                           alpha: 0.25,
                                         ),
                                       ),
-                                      child: const Icon(
+                                      child: Icon(
                                         Icons.play_arrow_rounded,
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.surface,
                                         size: 18,
                                       ),
                                     ),
@@ -2168,7 +2205,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         // Subtitles
                         Padding(
                           padding: const EdgeInsets.only(left: 4),
@@ -2179,7 +2216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
-                              color: Colors.black54,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                               height: 1.2,
                             ),
                           ),
@@ -2244,7 +2281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E1E24),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               GestureDetector(
@@ -2266,9 +2303,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           TextField(
-            style: GoogleFonts.inter(color: const Color(0xFF1E1E24)),
+            style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary),
             onChanged: (val) {
               setState(() {
                 _searchQuery = val.trim();
@@ -2276,10 +2313,10 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             decoration: InputDecoration(
               hintText: 'What do you want to listen to?',
-              hintStyle: GoogleFonts.inter(color: Colors.black38, fontSize: 14),
-              prefixIcon: const Icon(
+              hintStyle: GoogleFonts.inter(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 14),
+              prefixIcon: Icon(
                 FeatherIcons.search,
-                color: Colors.black45,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                 size: 20,
               ),
               filled: true,
@@ -2287,18 +2324,18 @@ class _HomeScreenState extends State<HomeScreen> {
               contentPadding: const EdgeInsets.symmetric(vertical: 16.0),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.black12),
+                borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFF1E1E24),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
                   width: 1.5,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           Expanded(
             child: _searchQuery.isNotEmpty
                 ? Column(
@@ -2309,17 +2346,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1E1E24),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Expanded(
                         child: results.isEmpty
                             ? Center(
                                 child: Text(
                                   'No matching songs found',
                                   style: GoogleFonts.inter(
-                                    color: Colors.black54,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                   ),
                                 ),
                               )
@@ -2332,7 +2369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 8),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: Theme.of(context).colorScheme.surface,
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
@@ -2362,19 +2399,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                         song['title'] ?? '',
                                         style: GoogleFonts.inter(
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF1E1E24),
+                                          color: Theme.of(context).colorScheme.primary,
                                         ),
                                       ),
                                       subtitle: Text(
                                         '${song['artist'] ?? ''}${song['movie'] != null && song['movie'].toString().isNotEmpty ? ' • ${song['movie']}' : ''}',
                                         style: GoogleFonts.inter(
-                                          color: Colors.black54,
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                           fontSize: 12,
                                         ),
                                       ),
-                                      trailing: const Icon(
+                                      trailing: Icon(
                                         Icons.play_arrow_rounded,
-                                        color: Color(0xFF1E1E24),
+                                        color: Theme.of(context).colorScheme.primary,
                                       ),
                                       onTap: () {
                                         AudioService().playSong(
@@ -2399,18 +2436,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           FeatherIcons.search,
                           size: 48,
-                          color: Colors.black26,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.26),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         Text(
                           'Search for songs or artists',
                           style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black45,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                           ),
                         ),
                       ],
@@ -2443,7 +2480,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E1E24),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               GestureDetector(
@@ -2465,15 +2502,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             height: 56,
             child: ElevatedButton.icon(
               onPressed: _showCreatePlaylistDialog,
-              icon: const Icon(
+              icon: Icon(
                 FeatherIcons.plus,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 size: 18,
               ),
               label: Text(
@@ -2481,28 +2518,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.montserrat(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.0,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   fontSize: 13,
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E1E24),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: 28),
           Text(
             'Your Collection',
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E1E24),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           ValueListenableBuilder<List<Map<String, dynamic>>>(
             valueListenable: AudioService().likedSongsNotifier,
             builder: (context, likedSongs, child) {
@@ -2539,7 +2576,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -2555,7 +2592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Expanded(
                               child: Container(
                                 width: double.infinity,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
                                       Color(0xFFE5B3B3),
@@ -2568,10 +2605,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     top: Radius.circular(12),
                                   ),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Icon(
                                     Icons.favorite_rounded,
-                                    color: Colors.white,
+                                    color: Theme.of(context).colorScheme.surface,
                                     size: 40,
                                   ),
                                 ),
@@ -2586,17 +2623,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                     'Liked Songs',
                                     style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1E1E24),
+                                      color: Theme.of(context).colorScheme.primary,
                                       fontSize: 13,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 3),
+                                  SizedBox(height: 3),
                                   Text(
                                     '${likedSongs.length} ${likedSongs.length == 1 ? "song" : "songs"}',
                                     style: GoogleFonts.inter(
-                                      color: Colors.black54,
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                       fontSize: 11,
                                     ),
                                   ),
@@ -2637,7 +2674,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -2678,13 +2715,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                       },
                                       child: Container(
                                         padding: const EdgeInsets.all(5),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black54,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           FeatherIcons.trash2,
-                                          color: Colors.white,
+                                          color: Theme.of(context).colorScheme.surface,
                                           size: 13,
                                         ),
                                       ),
@@ -2702,17 +2739,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                     pName,
                                     style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF1E1E24),
+                                      color: Theme.of(context).colorScheme.primary,
                                       fontSize: 13,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  const SizedBox(height: 3),
+                                  SizedBox(height: 3),
                                   Text(
                                     '$songCount ${songCount == 1 ? "song" : "songs"}',
                                     style: GoogleFonts.inter(
-                                      color: Colors.black54,
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                       fontSize: 11,
                                     ),
                                   ),
@@ -2764,7 +2801,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'name': name,
         'image': img.isNotEmpty
             ? img
-            : 'https://i.pinimg.com/736x/a2/e1/9b/a2e19b8849b293d05267b209d00b05b4.jpg',
+            : 'assets/default_playlist.png',
         'description': desc,
         'songs': <Map<String, dynamic>>[],
       };
@@ -2858,7 +2895,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E1E24),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               GestureDetector(
@@ -2880,7 +2917,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Stats Row
           Row(
@@ -2889,7 +2926,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -2902,26 +2939,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.headphones_rounded,
-                        color: Color(0xFF1E1E24),
+                        color: Theme.of(context).colorScheme.primary,
                         size: 24,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         'Total Plays',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: Colors.black54,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         '$totalPlays songs',
                         style: GoogleFonts.outfit(
                           fontSize: 20,
-                          color: const Color(0xFF1E1E24),
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -2929,12 +2966,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -2947,22 +2984,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(tierIcon, color: const Color(0xFF1E1E24), size: 24),
-                      const SizedBox(height: 12),
+                      Icon(tierIcon, color: Theme.of(context).colorScheme.primary, size: 24),
+                      SizedBox(height: 12),
                       Text(
                         'Vibe Tier',
                         style: GoogleFonts.inter(
                           fontSize: 12,
-                          color: Colors.black54,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         listenerTier,
                         style: GoogleFonts.outfit(
                           fontSize: 20,
-                          color: const Color(0xFF1E1E24),
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -2973,15 +3010,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
           // Peak Vibe Banner
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E1E24), Color(0xFF333344)],
+              gradient: LinearGradient(
+                colors: [Theme.of(context).colorScheme.primary, Color(0xFF333344)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -2989,8 +3026,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.bolt_rounded, color: Colors.amber, size: 32),
-                const SizedBox(width: 16),
+                Icon(Icons.bolt_rounded, color: Colors.amber, size: 32),
+                SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3004,14 +3041,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           letterSpacing: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         peakDay == 'None'
                             ? 'No tracks played yet'
                             : 'Your energy peaks on ${fullDayNames[peakDay]}s!',
                         style: GoogleFonts.outfit(
                           fontSize: 15,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -3022,121 +3059,291 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
 
-          // Weekly Goal tracker with standard base limits
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Daily Activity',
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E1E24),
-                ),
-              ),
-              Text(
-                'Weekly Overview',
-                style: GoogleFonts.inter(
-                  fontSize: 11,
-                  color: Colors.black45,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          _buildPersonaCard(),
+          SizedBox(height: 24),
+          _buildNewWeeklyChart(),
+          SizedBox(height: 24),
+          _buildTopArtistObsession(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonaCard() {
+    return Container(
+      width: double.infinity,
+      height: 180,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        image: DecorationImage(
+          image: AssetImage('assets/images/persona_explorer.png'),
+          fit: BoxFit.cover,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
-          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
 
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+  Widget _buildNewWeeklyChart() {
+    int maxPlay = 1;
+    _weeklyPlayStats.forEach((key, value) {
+      if (value > maxPlay) maxPlay = value;
+    });
+
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Weekly Overview',
+            style: GoogleFonts.outfit(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
-            child: Column(
-              children: days.map((day) {
-                final int count = _weeklyPlayStats[day] ?? 0;
-                // Scale bar width dynamically based on maximum weekly count (relative scale)
-                final double percentage = count / (maxCount > 0 ? maxCount : 1);
+          ),
+          SizedBox(height: 24),
+          SizedBox(
+            height: 120,
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 50,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 1,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: days.map((day) {
+                    final value = _weeklyPlayStats[day] ?? 0;
+                    final double barHeight = (value / maxPlay) * 90;
+                    final h = barHeight > 10 ? barHeight : 10.0;
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 44,
-                        child: Text(
-                          day,
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E1E24),
-                            fontSize: 13,
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: h,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Color(0xFF00E5FF),
+                                Color(0xFF1DE9B6),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0F1F4),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            FractionallySizedBox(
-                              widthFactor: percentage == 0 ? 0.01 : percentage,
-                              child: Container(
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF1E1E24),
-                                      Color(0xFF6F7285),
-                                    ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                            ),
-                          ],
+                        SizedBox(height: 8),
+                        Text(
+                          day[0],
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: 75,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              count == 1 ? '1 song' : '$count songs',
-                              style: GoogleFonts.inter(
-                                color: Colors.black87,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTopArtistObsession() {
+    if (_artistPlayCounts.isEmpty) {
+      return SizedBox.shrink(); // Don't show if no data yet
+    }
+
+    // Sort artists by play count
+    final sortedArtists = _artistPlayCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    // Show top 10 artists or all if less than 10
+    final displayArtists = sortedArtists.take(10).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Your Artist Obsessions',
+          style: GoogleFonts.outfit(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
+        ),
+        SizedBox(height: 16),
+        SizedBox(
+          height: 340,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: displayArtists.length,
+            itemBuilder: (context, index) {
+              final entry = displayArtists[index];
+              final topArtist = entry.key;
+              final maxPlays = entry.value;
+
+              String imageAsset = 'assets/logo.png';
+              final lowerArtist = topArtist.toLowerCase();
+              if (lowerArtist.contains('anirudh')) {
+                imageAsset = 'assets/anirudh.jpg';
+              } else if (lowerArtist.contains('ar rahman') || lowerArtist.contains('a.r. rahman')) {
+                imageAsset = 'assets/ar_rahman.png';
+              } else if (lowerArtist.contains('yuvan')) {
+                imageAsset = 'assets/yuvan.jpg';
+              } else if (lowerArtist.contains('vijay antony')) {
+                imageAsset = 'assets/vijay_antony.png';
+              } else if (lowerArtist.contains('hiphop')) {
+                imageAsset = 'assets/hiphop_tamizha.png';
+              } else if (lowerArtist.contains('harris')) {
+                imageAsset = 'assets/harris_jayaraj.png';
+              } else if (lowerArtist.contains('gv prakash') || lowerArtist.contains('g.v. prakash')) {
+                imageAsset = 'assets/gv_prakash.jpg';
+              } else if (lowerArtist.contains('srikanth')) {
+                imageAsset = 'assets/srikanth_deva.png';
+              } else if (lowerArtist.contains('sai abhyankkar')) {
+                imageAsset = 'assets/sai_abhyankkar.png';
+              } else if (lowerArtist.contains('dsp') || lowerArtist.contains('devi sri prasad')) {
+                imageAsset = 'assets/dsp.png';
+              } else if (lowerArtist.contains('imman')) {
+                imageAsset = 'assets/imman.png';
+              } else if (lowerArtist.contains('arunagiri')) {
+                imageAsset = 'assets/sn_arunagiri.png';
+              } else if (lowerArtist.contains('ilaiyaraaja') || lowerArtist.contains('raja')) {
+                imageAsset = 'assets/ilaiyaraaja.png';
+              } else if (lowerArtist.contains('karthik raja')) {
+                imageAsset = 'assets/karthik_raja.png';
+              } else {
+                for (var a in _artists) {
+                  if (a['name'] == topArtist) {
+                    imageAsset = a['image']!;
+                    break;
+                  }
+                }
+              }
+
+              return Container(
+                width: 280,
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '#${index + 1} Top Artist',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                        image: DecorationImage(
+                          image: AssetImage(imageAsset),
+                          fit: BoxFit.cover,
+                        ),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.surface,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      topArtist,
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Played $maxPlays times',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -3323,7 +3530,7 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                     margin: const EdgeInsets.symmetric(horizontal: 12.0),
                     padding: const EdgeInsets.all(12.0),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E24),
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -3353,7 +3560,7 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 14),
+                            SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -3370,14 +3577,14 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                                             Text(
                                               title,
                                               style: GoogleFonts.inter(
-                                                color: Colors.white,
+                                                color: Theme.of(context).colorScheme.surface,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 14,
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                            const SizedBox(height: 2),
+                                            SizedBox(height: 2),
                                             Text(
                                               artist,
                                               style: GoogleFonts.inter(
@@ -3405,18 +3612,18 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                                                     context,
                                                     error,
                                                     stackTrace,
-                                                  ) => const Icon(
+                                                  ) => Icon(
                                                     Icons.music_note,
                                                     size: 14,
                                                     color: Colors.white70,
                                                   ),
                                             ),
                                           ),
-                                          const SizedBox(width: 4),
+                                          SizedBox(width: 4),
                                           Text(
                                             'Hotify',
                                             style: GoogleFonts.inter(
-                                              color: Colors.white,
+                                              color: Theme.of(context).colorScheme.surface,
                                               fontWeight: FontWeight.w800,
                                               fontSize: 11,
                                               letterSpacing: 0.5,
@@ -3426,7 +3633,7 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 6),
+                                  SizedBox(height: 6),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     crossAxisAlignment:
@@ -3458,18 +3665,18 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                                           );
                                         },
                                       ),
-                                      const SizedBox(width: 16),
+                                      SizedBox(width: 16),
                                       GestureDetector(
                                         onTap: () {
                                           AudioService().previousSong();
                                         },
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.skip_previous_rounded,
-                                          color: Colors.white,
+                                          color: Theme.of(context).colorScheme.surface,
                                           size: 22,
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
+                                      SizedBox(width: 16),
                                       ValueListenableBuilder<bool>(
                                         valueListenable:
                                             AudioService().isPlayingNotifier,
@@ -3486,13 +3693,13 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                                                   width: 32,
                                                   height: 32,
                                                   decoration:
-                                                      const BoxDecoration(
+                                                      BoxDecoration(
                                                         shape: BoxShape.circle,
-                                                        color: Colors.white,
+                                                        color: Theme.of(context).colorScheme.surface,
                                                       ),
                                                   child: Center(
                                                     child: isLoading
-                                                        ? const SizedBox(
+                                                        ? SizedBox(
                                                             width: 14,
                                                             height: 14,
                                                             child:
@@ -3521,14 +3728,14 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                                           );
                                         },
                                       ),
-                                      const SizedBox(width: 16),
+                                      SizedBox(width: 16),
                                       GestureDetector(
                                         onTap: () {
                                           AudioService().nextSong();
                                         },
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.skip_next_rounded,
-                                          color: Colors.white,
+                                          color: Theme.of(context).colorScheme.surface,
                                           size: 22,
                                         ),
                                       ),
@@ -3539,7 +3746,7 @@ class _FloatingMiniPlayerState extends State<FloatingMiniPlayer>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 8),
                         ValueListenableBuilder<Duration>(
                           valueListenable: AudioService().positionNotifier,
                           builder: (context, position, child) {

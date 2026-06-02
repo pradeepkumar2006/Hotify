@@ -105,7 +105,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -127,7 +127,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Colors.black12,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -136,16 +136,16 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1E1E24),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       TextField(
                         controller: searchController,
-                        style: GoogleFonts.inter(color: const Color(0xFF1E1E24)),
+                        style: GoogleFonts.inter(color: Theme.of(context).colorScheme.primary),
                         decoration: InputDecoration(
                           hintText: 'Search songs or artists...',
-                          prefixIcon: const Icon(FeatherIcons.search, color: Colors.black38),
+                          prefixIcon: Icon(FeatherIcons.search, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)),
                           filled: true,
                           fillColor: Colors.black.withValues(alpha: 0.04),
                           contentPadding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -164,7 +164,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                           });
                         },
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       Expanded(
                         child: ListView.builder(
                           controller: scrollController,
@@ -189,14 +189,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
-                                  color: const Color(0xFF1E1E24),
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               subtitle: Text(
                                 song['artist']!,
-                                style: GoogleFonts.inter(fontSize: 12, color: Colors.black54),
+                                style: GoogleFonts.inter(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54)),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -217,14 +217,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                         );
                                       },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: alreadyAdded ? Colors.black12 : const Color(0xFF1E1E24),
-                                  foregroundColor: alreadyAdded ? Colors.black38 : Colors.white,
+                                  backgroundColor: alreadyAdded ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12) : Theme.of(context).colorScheme.primary,
+                                  foregroundColor: alreadyAdded ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38) : Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
-                                child: Text(alreadyAdded ? 'Added' : 'Add', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                child: Text(alreadyAdded ? 'Added' : 'Add', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                               ),
                             );
                           },
@@ -247,12 +247,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     final double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E1E24)),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -280,27 +280,27 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 width: double.infinity,
                 child: widget.playlist['isLikedSongs'] == true
                     ? Container(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Color(0xFF1E1E24), Color(0xFF2E2E38)],
+                            colors: [Theme.of(context).colorScheme.primary, Color(0xFF2E2E38)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
                                 Icons.favorite_rounded,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 size: 64,
                               ),
                               SizedBox(height: 8),
                               Text(
                                 "Top Liked Songs",
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 0.8,
@@ -339,7 +339,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       style: GoogleFonts.outfit(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF1E1E24),
+                                        color: Theme.of(context).colorScheme.primary,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -349,7 +349,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                         _description,
                                         style: GoogleFonts.inter(
                                           fontSize: 12,
-                                          color: Colors.black54,
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                           fontStyle: FontStyle.italic,
                                         ),
                                         maxLines: 1,
@@ -359,7 +359,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       Text(
                                         _getPlaylistDuration(),
                                         style: GoogleFonts.inter(
-                                          color: Colors.black45,
+                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
                                           fontSize: 11,
                                         ),
                                       ),
@@ -372,12 +372,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 children: [
                                   if (widget.playlist['isLikedSongs'] != true)
                                     IconButton(
-                                      icon: const Icon(Icons.add, color: Color(0xFF1E1E24)),
+                                      icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
                                       tooltip: 'Add Songs',
                                       onPressed: _showAddSongsSheet,
                                     ),
                                   IconButton(
-                                    icon: const Icon(Icons.swap_vert_rounded, color: Color(0xFF1E1E24)),
+                                    icon: Icon(Icons.swap_vert_rounded, color: Theme.of(context).colorScheme.primary),
                                     tooltip: 'Sort Songs',
                                     onPressed: () {
                                       setState(() {
@@ -389,7 +389,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   IconButton(
                                     icon: Icon(
                                       Icons.shuffle,
-                                      color: _isShuffleEnabled ? const Color(0xFF1E1E24) : Colors.black38,
+                                      color: _isShuffleEnabled ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -397,7 +397,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       });
                                     },
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: 4),
                                   GestureDetector(
                                     onTap: () {
                                       if (_songs.isNotEmpty) {
@@ -415,14 +415,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                     child: Container(
                                       width: 36,
                                       height: 36,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF1E1E24),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Center(
+                                      child: Center(
                                         child: Icon(
                                           Icons.play_arrow_rounded,
-                                          color: Colors.white,
+                                          color: Theme.of(context).colorScheme.surface,
                                           size: 22,
                                         ),
                                       ),
@@ -434,7 +434,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                           ),
                         ),
                       ),
-                      const Divider(color: Colors.black12, height: 1),
+                      Divider(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12), height: 1),
           // 60% Scrollable Songs List
           Expanded(
             child: Padding(
@@ -444,28 +444,28 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.music_note_outlined, color: Colors.black26, size: 48),
-                          const SizedBox(height: 12),
-                          const Text(
+                          Icon(Icons.music_note_outlined, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.26), size: 48),
+                          SizedBox(height: 12),
+                          Text(
                             'This playlist is empty.',
-                            style: TextStyle(color: Colors.black54),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54)),
                           ),
                           if (widget.playlist['isLikedSongs'] != true) ...[
-                            const SizedBox(height: 12),
+                            SizedBox(height: 12),
                             ElevatedButton(
                               onPressed: _showAddSongsSheet,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E1E24),
+                                backgroundColor: Theme.of(context).colorScheme.primary,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               ),
-                              child: const Text('Add Songs', style: TextStyle(fontWeight: FontWeight.bold)),
+                              child: Text('Add Songs', style: TextStyle(fontWeight: FontWeight.bold)),
                             ),
                           ] else ...[
-                            const SizedBox(height: 8),
-                            const Text(
+                            SizedBox(height: 8),
+                            Text(
                               'Songs you like on Home screen will appear here!',
-                              style: TextStyle(color: Colors.black38, fontSize: 12),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38), fontSize: 12),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -493,7 +493,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                           title: Text(
                             song['title']!,
                             style: GoogleFonts.inter(
-                              color: const Color(0xFF1E1E24),
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -503,14 +503,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                           subtitle: Text(
                             song['artist']!,
                             style: GoogleFonts.inter(
-                              color: Colors.black54,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                               fontSize: 12,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: IconButton(
-                            icon: const Icon(Icons.more_vert, color: Colors.black45),
+                            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
                             onPressed: () {
                               _showSongOptionsSheet(song, index);
                             },
@@ -534,7 +534,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   void _showSongOptionsSheet(Map<String, dynamic> song, int index) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -544,10 +544,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                leading: Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
                 title: Text(
                   'Remove "${song['title']}" from playlist',
-                  style: const TextStyle(color: Color(0xFF1E1E24)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.primary),
                 ),
                 onTap: () {
                   setState(() {
@@ -564,8 +564,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.cancel_outlined, color: Colors.black54),
-                title: const Text('Cancel', style: TextStyle(color: Color(0xFF1E1E24))),
+                leading: Icon(Icons.cancel_outlined, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54)),
+                title: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
                 onTap: () => Navigator.pop(context),
               ),
             ],

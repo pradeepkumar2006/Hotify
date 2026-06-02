@@ -51,6 +51,7 @@ dependencies:
   cached_network_image: ^3.4.1
   image_picker: ^1.1.2
   permission_handler: ^12.0.3
+  connectivity_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:
@@ -91,6 +92,13 @@ flutter:
     - assets/kuthu_cat.png
     - assets/melody_cat.png
     - assets/classical_cat.png
+    - assets/images/persona_explorer.png
+    - assets/dsp.png
+    - assets/imman.png
+    - assets/sn_arunagiri.png
+    - assets/ilaiyaraaja.png
+    - assets/karthik_raja.png
+    - assets/default_playlist.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

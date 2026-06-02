@@ -99,7 +99,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Stack(
         children: [
           // 1. Background Layer (Artist Image with Parallax & Stretch zoom - Performance Optimized)
@@ -185,7 +185,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           shadows: [
                             Shadow(
                               color: Colors.black.withValues(alpha: 0.4),
@@ -210,17 +210,17 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
               child: Column(
                 children: [
                   // Transparent spacer to push the sliding card below the visible header
-                  const SizedBox(height: 330),
+                  SizedBox(height: 330),
 
                   // Sliding Songs Card
                   Container(
                     width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black12,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
                           blurRadius: 12,
                           offset: Offset(0, -6),
                         ),
@@ -236,13 +236,13 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                             width: 36,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: Colors.black12,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
 
                         // Songs Header Text
                         Padding(
@@ -252,23 +252,23 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                             style: GoogleFonts.outfit(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1E1E24),
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
 
                         // Songs List (List builder stays intact and is cached in build cycle)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12.0),
                           child: artistSongs.isEmpty
-                              ? const Center(
+                              ? Center(
                                   child: Padding(
                                     padding: EdgeInsets.symmetric(vertical: 40.0),
                                     child: Text(
                                       'No songs found for this artist.',
-                                      style: TextStyle(color: Colors.black45),
+                                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
                                     ),
                                   ),
                                 )
@@ -298,7 +298,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                                           style: GoogleFonts.inter(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
-                                            color: const Color(0xFF1E1E24),
+                                            color: Theme.of(context).colorScheme.primary,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -307,7 +307,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                                           song['artist']!,
                                           style: GoogleFonts.inter(
                                             fontSize: 12,
-                                            color: Colors.black54,
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -316,17 +316,17 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           crossAxisAlignment: CrossAxisAlignment.end,
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.favorite_border,
-                                              color: Colors.black38,
+                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
                                               size: 18,
                                             ),
-                                            const SizedBox(height: 4),
+                                            SizedBox(height: 4),
                                             Text(
                                               _getSongDuration(song),
                                               style: GoogleFonts.inter(
                                                 fontSize: 10,
-                                                color: Colors.black38,
+                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
@@ -349,7 +349,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                                 ),
                         ),
 
-                        const SizedBox(height: 120),
+                        SizedBox(height: 120),
                       ],
                     ),
                   ),
@@ -388,7 +388,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                 final double navBarOpacity = (scrollOffset / 180.0).clamp(0.0, 1.0);
                 final bool isNavbarWhite = navBarOpacity > 0.8;
                 
-                final Color navIconColor = isNavbarWhite ? const Color(0xFF1E1E24) : Colors.white;
+                final Color navIconColor = isNavbarWhite ? Theme.of(context).colorScheme.primary : Colors.white;
                 final Color navIconBg = isNavbarWhite ? Colors.transparent : Colors.black.withValues(alpha: 0.3);
                 
                 return Row(
@@ -421,7 +421,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                               style: GoogleFonts.outfit(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1E1E24),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

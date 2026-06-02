@@ -9,6 +9,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'login_screen.dart';
+import 'utils/theme_notifier.dart';
+import 'help_support_screen.dart';
+import 'account_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final int playlistsCount;
@@ -31,6 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _playlistCount = 0;
   int _favoriteCount = 0;
   String _listeningMinutesStr = '0';
+  String _audioQuality = 'Standard Quality';
 
   @override
   void initState() {
@@ -70,9 +74,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final file = await _getProfileFile();
       if (await file.exists()) {
         final decoded = json.decode(await file.readAsString());
-        if (decoded is Map && decoded.containsKey('profileImagePath')) {
+        if (decoded is Map) {
           setState(() {
-            _profileImagePath = decoded['profileImagePath'];
+            if (decoded.containsKey('profileImagePath')) {
+              _profileImagePath = decoded['profileImagePath'];
+            }
+            if (decoded.containsKey('audioQuality')) {
+              _audioQuality = decoded['audioQuality'];
+            }
           });
         }
       }
@@ -85,7 +94,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       if (kIsWeb) return; // File system not supported on web
       final file = await _getProfileFile();
-      await file.writeAsString(json.encode({'profileImagePath': path}));
+      await file.writeAsString(json.encode({
+        'profileImagePath': _profileImagePath,
+        'audioQuality': _audioQuality,
+      }));
     } catch (e) {
       debugPrint("Error saving profile info: $e");
     }
@@ -165,7 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         image: provider,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          return const Icon(
+          return Icon(
             FeatherIcons.user,
             size: 48,
             color: Color(0xFF1E1E24),
@@ -173,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       );
     }
-    return const Icon(
+    return Icon(
       FeatherIcons.user,
       size: 48,
       color: Color(0xFF1E1E24),
@@ -183,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showImageSourceActionSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -198,12 +210,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E1E24),
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               ListTile(
-                leading: const Icon(Icons.photo_library_rounded, color: Color(0xFF1E1E24)),
+                leading: Icon(Icons.photo_library_rounded, color: Theme.of(context).iconTheme.color),
                 title: Text('Choose from Gallery', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                 onTap: () {
                   Navigator.pop(context);
@@ -211,7 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.camera_alt_rounded, color: Color(0xFF1E1E24)),
+                leading: Icon(Icons.camera_alt_rounded, color: Theme.of(context).iconTheme.color),
                 title: Text('Take a Photo', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                 onTap: () {
                   Navigator.pop(context);
@@ -232,18 +244,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final String email = currentUser?.email ?? 'music@hotify.com';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F5F7),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(FeatherIcons.arrowLeft, color: Color(0xFF1E1E24)),
+          icon: Icon(FeatherIcons.arrowLeft, color: Theme.of(context).iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Profile',
           style: GoogleFonts.outfit(
-            color: const Color(0xFF1E1E24),
+            color: Theme.of(context).textTheme.bodyLarge?.color,
             fontWeight: FontWeight.bold,
             fontSize: 22,
           ),
@@ -267,8 +278,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         height: 115,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(color: Colors.black12, width: 2.5),
+                          color: Theme.of(context).colorScheme.surface,
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.2), width: 2.5),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.06),
@@ -280,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         padding: const EdgeInsets.all(4),
                         child: ClipOval(
                           child: Container(
-                            color: const Color(0xFFEBECEF),
+                            color: Theme.of(context).colorScheme.secondary,
                             child: _buildAvatarWidget(),
                           ),
                         ),
@@ -305,7 +316,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.camera_alt_rounded,
                               color: Colors.white,
                               size: 16,
@@ -315,29 +326,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     displayName,
                     style: GoogleFonts.outfit(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E1E24),
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     email,
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: Colors.black54,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   // Premium Tag
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E24),
+                      color: Theme.of(context).colorScheme.secondary,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -345,7 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSecondary,
                         letterSpacing: 1.0,
                       ),
                     ),
@@ -353,7 +364,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 36),
+            SizedBox(height: 36),
 
             // Statistics Section
             Text(
@@ -361,10 +372,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E1E24),
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -373,14 +384,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: 'Playlists',
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: _buildStatCard(
                     value: _favoriteCount.toString(),
                     label: 'Favorites',
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: _buildStatCard(
                     value: _listeningMinutesStr,
@@ -389,12 +400,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 36),
+            SizedBox(height: 36),
 
             // Profile Actions List
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -406,33 +417,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 children: [
+                  ValueListenableBuilder<ThemeMode>(
+                    valueListenable: themeNotifier,
+                    builder: (context, themeMode, _) {
+                      return ListTile(
+                        leading: Icon(FeatherIcons.moon, color: Theme.of(context).iconTheme.color, size: 20),
+                        title: Text(
+                          'Dark Mode',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
+                        ),
+                        trailing: Switch(
+                          value: themeMode == ThemeMode.dark,
+                          onChanged: (value) {
+                            toggleTheme();
+                          },
+                          activeColor: Theme.of(context).colorScheme.primary,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                      );
+                    },
+                  ),
+                  Divider(height: 1, indent: 56, color: Colors.grey.withValues(alpha: 0.2)),
                   _buildListTile(
                     icon: FeatherIcons.settings,
                     title: 'Account Settings',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AccountSettingsScreen(),
+                        ),
+                      );
+                    },
                   ),
-                  const Divider(height: 1, indent: 56, color: Colors.black12),
+                  Divider(height: 1, indent: 56, color: Colors.grey.withValues(alpha: 0.2)),
                   _buildListTile(
                     icon: FeatherIcons.bell,
                     title: 'Notification Preferences',
                     onTap: () {},
                   ),
-                  const Divider(height: 1, indent: 56, color: Colors.black12),
+                  Divider(height: 1, indent: 56, color: Colors.grey.withValues(alpha: 0.2)),
                   _buildListTile(
                     icon: FeatherIcons.volume2,
                     title: 'Audio Quality',
-                    onTap: () {},
+                    onTap: _showAudioQualityBottomSheet,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _audioQuality,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(FeatherIcons.chevronRight, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.26), size: 16),
+                      ],
+                    ),
                   ),
-                  const Divider(height: 1, indent: 56, color: Colors.black12),
+                  Divider(height: 1, indent: 56, color: Colors.grey.withValues(alpha: 0.2)),
                   _buildListTile(
                     icon: FeatherIcons.helpCircle,
                     title: 'Help & Support',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HelpSupportScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
 
             // Logout Button
             OutlinedButton(
@@ -448,7 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }
               },
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                side: BorderSide(color: Colors.redAccent, width: 1.5),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28),
@@ -464,7 +528,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
           ],
         ),
       ),
@@ -478,7 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
@@ -495,15 +559,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: GoogleFonts.outfit(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E1E24),
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Text(
             label,
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: Colors.black45,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -516,20 +580,92 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    Widget? trailing,
   }) {
     return ListTile(
       onTap: onTap,
-      leading: Icon(icon, color: const Color(0xFF1E1E24), size: 20),
+      leading: Icon(icon, color: Theme.of(context).iconTheme.color, size: 20),
       title: Text(
         title,
         style: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF1E1E24),
+          color: Theme.of(context).textTheme.bodyLarge?.color,
         ),
       ),
-      trailing: const Icon(FeatherIcons.chevronRight, color: Colors.black26, size: 16),
+      trailing: trailing ?? Icon(FeatherIcons.chevronRight, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.26), size: 16),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
     );
   }
+
+  void _showAudioQualityBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Audio Quality',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              SizedBox(height: 16),
+              _buildQualityOption('Low Quality', 'Data saver mode (96 kbps)'),
+              _buildQualityOption('Standard Quality', 'Balanced mode (160 kbps)'),
+              _buildQualityOption('High Quality', 'Best audio experience (320 kbps)'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildQualityOption(String quality, String description) {
+    return ListTile(
+      onTap: () async {
+        setState(() {
+          _audioQuality = quality;
+        });
+        await _saveProfileData(_profileImagePath ?? '');
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Audio quality set to $quality'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      },
+      contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      title: Text(
+        quality,
+        style: GoogleFonts.inter(
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
+      ),
+      subtitle: Text(
+        description,
+        style: GoogleFonts.inter(
+          fontSize: 12,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
+        ),
+      ),
+      trailing: _audioQuality == quality
+          ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+          : null,
+    );
+  }
+
+
 }
