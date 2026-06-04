@@ -515,6 +515,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                               _showSongOptionsSheet(song, index);
                             },
                           ),
+                          onTap: () {
+                            AudioService().playSong(song, playlistContext: _songs);
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const PlayerScreen(),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),

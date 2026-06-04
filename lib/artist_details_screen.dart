@@ -51,17 +51,17 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
   }
 
   ImageProvider _getSongImageProvider(Map<String, dynamic> song) {
-    final String? img = song['img'];
-    if (img != null && img.isNotEmpty) {
-      if (img.startsWith('assets/')) {
-        return AssetImage(img);
-      }
+    // Always use the artist's photo for all song tiles on this screen
+    final String img = widget.artistImage;
+    if (img.startsWith('http')) {
       return CachedNetworkImageProvider(img);
     }
-    if (widget.artistImage.startsWith('assets/')) {
-      return AssetImage(widget.artistImage);
+    if (img.startsWith('assets/')) {
+      return AssetImage(img);
     }
-    return CachedNetworkImageProvider(widget.artistImage);
+    return const CachedNetworkImageProvider(
+      'https://i.pinimg.com/736x/5e/04/99/5e049992ef02750dad84fe7d44c061bc.jpg',
+    );
   }
 
   String _getSongDuration(Map<String, dynamic> song) {
@@ -272,13 +272,8 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                                     ),
                                   ),
                                 )
-                              : ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  padding: EdgeInsets.zero,
-                                  itemCount: artistSongs.length,
-                                  itemBuilder: (context, index) {
-                                    final song = artistSongs[index];
+                              : Column(
+                                  children: artistSongs.map((song) {
                                     return Container(
                                       margin: const EdgeInsets.symmetric(vertical: 4.0),
                                       child: ListTile(
@@ -290,11 +285,38 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                                             child: Image(
                                               image: _getSongImageProvider(song),
                                               fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                final fallback = widget.artistImage;
+                                                if (fallback.startsWith('http')) {
+                                                  return CachedNetworkImage(
+                                                    imageUrl: fallback,
+                                                    fit: BoxFit.cover,
+                                                    width: 56,
+                                                    height: 56,
+                                                    errorWidget: (c, u, e) => Container(
+                                                      color: Colors.grey.shade800,
+                                                      child: const Icon(
+                                                        Icons.music_note,
+                                                        color: Colors.white54,
+                                                        size: 28,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                                return Container(
+                                                  color: Colors.grey.shade800,
+                                                  child: const Icon(
+                                                    Icons.music_note,
+                                                    color: Colors.white54,
+                                                    size: 28,
+                                                  ),
+                                                );
+                                              },
                                             ),
                                           ),
                                         ),
                                         title: Text(
-                                          song['title']!,
+                                          song['title'] ?? '',
                                           style: GoogleFonts.inter(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
@@ -304,7 +326,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         subtitle: Text(
-                                          song['artist']!,
+                                          song['artist'] ?? '',
                                           style: GoogleFonts.inter(
                                             fontSize: 12,
                                             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
@@ -345,7 +367,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                                         },
                                       ),
                                     );
-                                  },
+                                  }).toList(),
                                 ),
                         ),
 

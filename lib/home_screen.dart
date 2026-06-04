@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'; // includes compute + kIsWeb
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -451,27 +451,61 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _magicPlaylist = [];
   bool _isLoadingSongs = true;
 
-  final List<Map<String, String>> _artists = const [
-    {'name': 'A.R. Rahman', 'image': 'assets/ar_rahman.png'},
-    {'name': 'Anirudh', 'image': 'assets/anirudh.jpg'},
-    {'name': 'Yuvan Sankar Raja', 'image': 'assets/yuvan.jpg'},
-    {
-      'name': 'Deva',
-      'image':
-          'https://i.pinimg.com/1200x/ed/ae/19/edae1927b2094577b713a011432c2856.jpg',
-    },
-    {'name': 'Hip Hop Aadhi', 'image': 'assets/hiphop_tamizha.png'},
-    {'name': 'GV Prakash Kumar', 'image': 'assets/gv_prakash.jpg'},
-    {'name': 'Sai Abhyankkar', 'image': 'assets/sai_abhyankkar.png'},
-    {'name': 'Srikanth Deva', 'image': 'assets/srikanth_deva.png'},
-    {'name': 'Vijay Antony', 'image': 'assets/vijay_antony.png'},
-    {'name': 'Harris Jayaraj', 'image': 'assets/harris_jayaraj.png'},
-    {'name': 'DSP', 'image': 'assets/dsp.png'},
-    {'name': 'D Imman', 'image': 'assets/imman.png'},
-    {'name': 'SN Arunagiri', 'image': 'assets/sn_arunagiri.png'},
-    {'name': 'Ilaiyaraaja', 'image': 'assets/ilaiyaraaja.png'},
-    {'name': 'Karthik Raja', 'image': 'assets/karthik_raja.png'},
-  ];
+  // Cached artist list — built ONCE after songs load, never rebuilt on scroll
+  List<Map<String, String>> _artists = [];
+
+
+  // Static const — never rebuilt, allocated once for lifetime of the app
+  static const Map<String, String> _artistImages = {
+    // A. R. Rahman
+    'arrahman': 'assets/ar_rahman.png',
+    'rahman': 'assets/ar_rahman.png',
+    // Anirudh Ravichander
+    'anirudh': 'assets/anirudh.jpg',
+    // Yuvan Shankar Raja
+    'yuvanshankarraja': 'assets/yuvan.jpg',
+    'yuvansankar': 'assets/yuvan.jpg',
+    'yuvan': 'assets/yuvan.jpg',
+    // Deva
+    'deva':
+        'https://i.pinimg.com/1200x/ed/ae/19/edae1927b2094577b713a011432c2856.jpg',
+    // Hiphop Tamizha
+    'hiphopaadhi': 'assets/hiphop_tamizha.png',
+    'hiphopta': 'assets/hiphop_tamizha.png',
+    'hiphop': 'assets/hiphop_tamizha.png',
+    // GV Prakash Kumar
+    'gvprakash': 'assets/gv_prakash.jpg',
+    'gvprakashkumar': 'assets/gv_prakash.jpg',
+    // Sai Abhyankkar
+    'saiabhyankkar': 'assets/sai_abhyankkar.png',
+    'saiabhyankar': 'assets/sai_abhyankkar.png',
+    // Srikanth Deva
+    'srikanthdeva': 'assets/srikanth_deva.png',
+    // Vijay Antony
+    'vijayantony': 'assets/vijay_antony.png',
+    // Harris Jayaraj
+    'harrisjayaraj': 'assets/harris_jayaraj.png',
+    // DSP / Devi Sri Prasad
+    'dsp': 'assets/dsp.png',
+    'devissriprasad': 'assets/dsp.png',
+    'devisriprasad': 'assets/dsp.png',
+    // D. Imman
+    'dimman': 'assets/imman.png',
+    'imman': 'assets/imman.png',
+    // S. N. Arunagiri
+    'snarunagiri': 'assets/sn_arunagiri.png',
+    'arunagiri': 'assets/sn_arunagiri.png',
+    // Ilaiyaraaja
+    'ilaiyaraaja': 'assets/ilaiyaraaja.png',
+    'ilayaraja': 'assets/ilaiyaraaja.png',
+    // Karthik Raja
+    'karthikraja': 'assets/karthik_raja.png',
+    // M. S. Viswanathan
+    'msviswanathan':
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/M._S._Viswanathan.jpg/440px-M._S._Viswanathan.jpg',
+    'viswanathan':
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/M._S._Viswanathan.jpg/440px-M._S._Viswanathan.jpg',
+  };
 
   String _getArtistPicture(String artistName, String fallbackImageUrl) {
     final String cleanArtist = artistName
@@ -479,34 +513,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .replaceAll(' ', '')
         .replaceAll('.', '');
 
-    final Map<String, String> artistImages = {
-      'arrahman': 'assets/ar_rahman.png',
-      'anirudh': 'assets/anirudh.jpg',
-      'yuvansankar': 'assets/yuvan.jpg',
-      'yuvanshankar': 'assets/yuvan.jpg',
-      'deva':
-          'https://i.pinimg.com/1200x/ed/ae/19/edae1927b2094577b713a011432c2856.jpg',
-      'hiphopaadhi': 'assets/hiphop_tamizha.png',
-      'hiphop': 'assets/hiphop_tamizha.png',
-      'gvprakash': 'assets/gv_prakash.jpg',
-      'saiabhyankkar': 'assets/sai_abhyankkar.png',
-      'saiabhyankar': 'assets/sai_abhyankkar.png',
-      'srikanthdeva': 'assets/srikanth_deva.png',
-      'vijayantony': 'assets/vijay_antony.png',
-      'harrisjayaraj': 'assets/harris_jayaraj.png',
-      'dsp': 'assets/dsp.png',
-      'devisriprasad': 'assets/dsp.png',
-      'dimman': 'assets/imman.png',
-      'imman': 'assets/imman.png',
-      'snarunagiri': 'assets/sn_arunagiri.png',
-      'arunagiri': 'assets/sn_arunagiri.png',
-      'ilaiyaraaja': 'assets/ilaiyaraaja.png',
-      'ilayaraja': 'assets/ilaiyaraaja.png',
-      'raja': 'assets/ilaiyaraaja.png',
-      'karthikraja': 'assets/karthik_raja.png',
-    };
-
-    for (final entry in artistImages.entries) {
+    for (final entry in _artistImages.entries) {
       if (cleanArtist.contains(entry.key) || entry.key.contains(cleanArtist)) {
         return entry.value;
       }
@@ -521,9 +528,20 @@ class _HomeScreenState extends State<HomeScreen> {
   ImageProvider _getSongImageProvider(Map<String, dynamic> song) {
     final String? img = song['img'];
     final String artist = song['artist'] ?? '';
-    final String imagePath = (img != null && img.isNotEmpty)
+    String imagePath = (img != null && img.isNotEmpty)
         ? img
         : _getArtistPicture(artist, '');
+
+    // If path points to a local asset that might not exist, use artist picture
+    if (imagePath.startsWith('assets/') &&
+        !imagePath.endsWith('.jpg') &&
+        !imagePath.endsWith('.jpeg') &&
+        !imagePath.endsWith('.png')) {
+      imagePath = _getArtistPicture(
+        artist,
+        'https://i.pinimg.com/736x/5e/04/99/5e049992ef02750dad84fe7d44c061bc.jpg',
+      );
+    }
 
     if (imagePath.startsWith('assets/')) {
       return AssetImage(imagePath);
@@ -1003,20 +1021,47 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Off-thread JSON parser — keeps UI thread free
+  static List<Map<String, dynamic>> _parseJson(String jsonString) {
+    final List<dynamic> jsonList = json.decode(jsonString);
+    return jsonList.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+  }
+
+  List<Map<String, String>> _buildArtistsList(List<Map<String, dynamic>> songs) {
+    final seen = <String>{};
+    final list = <Map<String, String>>[];
+    for (final song in songs) {
+      final name = (song['artist'] ?? '').toString().trim();
+      if (name.isEmpty ||
+          name == 'Unknown Composer' ||
+          name == 'Various Composers') continue;
+      if (seen.contains(name)) continue;
+      seen.add(name);
+      list.add({
+        'name': name,
+        'image': _getArtistPicture(
+          name,
+          'https://i.pinimg.com/736x/5e/04/99/5e049992ef02750dad84fe7d44c061bc.jpg',
+        ),
+      });
+    }
+    return list;
+  }
+
   Future<void> _loadSongs() async {
     final assetBundle = DefaultAssetBundle.of(context);
     try {
       final String jsonString = await assetBundle.loadString(
         'assets/tamil_songs.json',
       );
-      final List<dynamic> jsonList = json.decode(jsonString);
+      // Parse off the main thread so UI stays smooth
+      final songs = await compute(_parseJson, jsonString);
+      final shuffled = List<Map<String, dynamic>>.from(songs)..shuffle();
       setState(() {
-        _allSongs = jsonList
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList();
-        final shuffled = List<Map<String, dynamic>>.from(_allSongs)..shuffle();
+        _allSongs = songs;
         _recentlyPlayed = shuffled.take(15).toList();
-        _magicPlaylist = List<Map<String, dynamic>>.from(_allSongs)..shuffle();
+        _magicPlaylist = List<Map<String, dynamic>>.from(songs)..shuffle();
+        _artists = _buildArtistsList(songs); // cached once
         _isLoadingSongs = false;
       });
     } catch (e) {
