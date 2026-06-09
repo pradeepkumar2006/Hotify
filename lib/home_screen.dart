@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'widgets/musical_galaxy.dart';
 import 'package:flutter/foundation.dart'; // includes compute + kIsWeb
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1243,13 +1244,23 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _showArtistSongs(String artistName, String artistImage) {
+    void _showArtistSongs(String artistName, String artistImage) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ArtistDetailsScreen(
           artistName: artistName,
           artistImage: artistImage,
-          allSongs: _allSongs,
+          artistSongs: _allSongs.where((song) {
+            final songArtist = (song['artist']?.toString() ?? '')
+                .toLowerCase()
+                .replaceAll(' ', '')
+                .replaceAll('.', '');
+            final queryArtist = artistName
+                .toLowerCase()
+                .replaceAll(' ', '')
+                .replaceAll('.', '');
+            return songArtist.contains(queryArtist) || queryArtist.contains(songArtist);
+          }).toList(),
         ),
       ),
     );
@@ -1422,6 +1433,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Home Dashboard Tab Content
+  void _showGalaxyArtistSongs(String artistName, String artistImage) {
+    final artistSongs = _allSongs.where((song) {
+      final songArtist = (song['artist']?.toString() ?? '')
+          .toLowerCase()
+          .replaceAll(' ', '')
+          .replaceAll('.', '');
+      final queryArtist = artistName
+          .toLowerCase()
+          .replaceAll(' ', '')
+          .replaceAll('.', '');
+      return songArtist.contains(queryArtist) ||
+          queryArtist.contains(songArtist);
+    }).toList();
+
+    if (artistSongs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("You haven't added any $artistName magic to your galaxy yet. Go heart some tracks!"),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+      );
+      return;
+    }
+
+    _showArtistSongs(artistName, artistImage);
+  }
+
   Widget _buildHomeDashboard() {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -1602,6 +1640,111 @@ class _HomeScreenState extends State<HomeScreen> {
 
           SizedBox(height: 16),
 
+          // Musical Galaxy View
+          MusicalGalaxyView(
+            onArtistTap: (name, image) => _showGalaxyArtistSongs(name, image),
+          ),
+          SizedBox(height: 12),
+
+          // 3. Explore Genres section
+          Text(
+            'Explore Genres',
+            style: GoogleFonts.outfit(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          SizedBox(height: 16),
+          SizedBox(
+            height: 150,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: _genreCards.length,
+              itemBuilder: (context, index) {
+                final card = _genreCards[index];
+                return GestureDetector(
+                  onTap: () {
+                    _showGenreSongs(
+                      card['genre']!,
+                      card['label']!,
+                      card['gradient'] as Gradient,
+                    );
+                  },
+                  child: Container(
+                    width: 150,
+                    margin: const EdgeInsets.only(right: 14.0),
+                    decoration: BoxDecoration(
+                      gradient: card['image'] == null
+                          ? card['gradient'] as Gradient
+                          : null,
+                      image: card['image'] != null
+                          ? DecorationImage(
+                              image: _getImageProvider(card['image'] as String),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (card['glow'] as Color).withValues(
+                            alpha: 0.15,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        children: [
+                          // Dark-glass overlay
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                width: 1.0,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          // Text label aligned to the top-left
+                          Padding(
+                            padding: const EdgeInsets.all(14.0),
+                            child: Align(
+                              alignment: Alignment.topLeft,
+                              child: Text(
+                                card['label']!,
+                                style: GoogleFonts.outfit(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                  letterSpacing: 0.5,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
           // 2. Recently Played is under the Artists Section
           Text(
             'Recently Played',
@@ -1740,107 +1883,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
-
-          SizedBox(height: 12),
-
-          // 3. Explore Genres section
-          Text(
-            'Explore Genres',
-            style: GoogleFonts.outfit(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          SizedBox(height: 16),
-          SizedBox(
-            height: 150,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemCount: _genreCards.length,
-              itemBuilder: (context, index) {
-                final card = _genreCards[index];
-                return GestureDetector(
-                  onTap: () {
-                    _showGenreSongs(
-                      card['genre']!,
-                      card['label']!,
-                      card['gradient'] as Gradient,
-                    );
-                  },
-                  child: Container(
-                    width: 150,
-                    margin: const EdgeInsets.only(right: 14.0),
-                    decoration: BoxDecoration(
-                      gradient: card['image'] == null
-                          ? card['gradient'] as Gradient
-                          : null,
-                      image: card['image'] != null
-                          ? DecorationImage(
-                              image: _getImageProvider(card['image'] as String),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (card['glow'] as Color).withValues(
-                            alpha: 0.15,
-                          ),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Stack(
-                        children: [
-                          // Dark-glass overlay
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.12),
-                                width: 1.0,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          // Text label aligned to the top-left
-                          Padding(
-                            padding: const EdgeInsets.all(14.0),
-                            child: Align(
-                              alignment: Alignment.topLeft,
-                              child: Text(
-                                card['label']!,
-                                style: GoogleFonts.outfit(
-                                  color: Theme.of(context).colorScheme.surface,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14,
-                                  letterSpacing: 0.5,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
 
           SizedBox(height: 24),
 
