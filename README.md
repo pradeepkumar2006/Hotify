@@ -1,10 +1,10 @@
-# Vibeflow 🎵
+# Vibeflow 
 
 Welcome to **Vibeflow** (formerly Hotify) – a sleek, beautiful, and completely free Open Audio streaming application built with Flutter. Vibeflow is designed to provide users with a seamless, personalized music experience featuring a stunning glassmorphic UI, smooth micro-animations, and instantaneous playback.
 
 ![Vibeflow Logo](assets/logo.png)
 
-## ✨ Key Features
+##  Key Features
 
 * **Free Open Audio Streaming:** Access thousands of songs for free, without ads disrupting your vibe.
 * **Massive Preloaded Library:** Enjoy over 7,600+ preloaded songs, spanning across Tamil and English hits.
@@ -15,18 +15,14 @@ Welcome to **Vibeflow** (formerly Hotify) – a sleek, beautiful, and completely
 * **Background Playback:** Vibeflow keeps playing even when you exit the app or lock your screen.
 * **Firebase Integration:** Secure email/password authentication and seamless syncing to keep your profile secure.
 
-## 📱 Screenshots
-
-*(Add your screenshots here!)*
-
-## 🛠️ Technology Stack
+## Technology Stack
 
 * **Framework:** Flutter & Dart
 * **Backend:** Firebase (Authentication, Storage, Firestore)
 * **Audio Engine:** `just_audio` and `audio_service`
 * **UI/UX Design:** Glassmorphism, Google Fonts (`Inter`, `Outfit`, `Montserrat`), Custom Animations
 
-## 🚀 Getting Started
+## Getting Started
 
 If you want to run Vibeflow locally on your machine, follow these steps:
 
@@ -55,7 +51,7 @@ If you want to run Vibeflow locally on your machine, follow these steps:
    flutter run
    ```
 
-## 📜 License
+##  License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
