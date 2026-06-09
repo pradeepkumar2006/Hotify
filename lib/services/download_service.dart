@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'song_matcher.dart';
 
 class DownloadService {
   // Singleton pattern
@@ -87,20 +88,59 @@ class DownloadService {
 
     try {
       // 1. Resolve JioSaavn URL
-      final String query = "${song['title']} ${song['artist']}";
-      final String searchUrl = "https://saavnapi-nine.vercel.app/song/?query=${Uri.encodeComponent(query)}";
-      
-      final response = await http.get(Uri.parse(searchUrl));
-      if (response.statusCode != 200) {
-        throw Exception("Failed to search JioSaavn");
+      String cleanTitle = SongMatcher.cleanString(song['title'] ?? '');
+      String cleanMovie = SongMatcher.cleanString(song['movie'] ?? '');
+      String cleanArtist = SongMatcher.cleanString(song['composer'] ?? song['artist'] ?? '');
+
+      String specificQuery = "";
+      if (cleanMovie.isNotEmpty) {
+          specificQuery = "$cleanTitle $cleanMovie".trim();
       }
+      String fallbackQuery = "$cleanTitle $cleanArtist".trim();
+      String simpleQuery = cleanTitle.trim();
+
+      List<String> queriesToTry = [specificQuery, fallbackQuery, simpleQuery]
+          .where((q) => q.isNotEmpty).toSet().toList();
       
-      final decoded = json.decode(response.body);
-      if (decoded is! List || decoded.isEmpty) {
-        throw Exception("No results on JioSaavn");
+      dynamic bestMatch;
+      String expectedLanguage = (song['language'] ?? 'tamil').toString().toLowerCase();
+
+      for (String query in queriesToTry) {
+        final String searchUrl = "https://saavnapi-nine.vercel.app/song/?query=${Uri.encodeComponent(query)}";
+        try {
+          final response = await http.get(Uri.parse(searchUrl));
+          if (response.statusCode == 200) {
+            final decoded = json.decode(response.body);
+            List<dynamic> results = [];
+            if (decoded is List) {
+              results = decoded;
+            } else if (decoded is Map && decoded['value'] is List) {
+              results = decoded['value'];
+            }
+            
+            if (results.isNotEmpty) {
+              bestMatch = SongMatcher.findBestMatch(
+                results,
+                targetTitle: song['title'] ?? '',
+                targetMovie: song['movie'] ?? '',
+                targetArtist: song['artist'] ?? '',
+                targetSinger: song['singer'] ?? song['singers'] ?? '',
+                expectedLanguage: expectedLanguage,
+              );
+              if (bestMatch != null) {
+                break; // Found a valid match!
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint("Search error during download for query $query: $e");
+        }
       }
 
-      final bestMatch = decoded[0];
+      if (bestMatch == null) {
+        throw Exception("Could not find matching song on JioSaavn for download");
+      }
+
       final String? audioUrl = bestMatch['media_url'];
       final String? albumArtUrl = bestMatch['image'] as String?;
 
@@ -118,7 +158,7 @@ class DownloadService {
       final directory = await getApplicationDocumentsDirectory();
       // Clean filename
       final String safeTitle = (song['title'] ?? 'Unknown').replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-      final File localAudioFile = File('${directory.path}/$safeTitle\_$songId.mp3');
+      final File localAudioFile = File('${directory.path}/${safeTitle}_$songId.mp3');
       await localAudioFile.writeAsBytes(audioResponse.bodyBytes);
 
       // 4. Update metadata and save
@@ -167,5 +207,41 @@ class DownloadService {
     } catch (e) {
       debugPrint("Error deleting download: $e");
     }
+  }
+
+  Future<void> clearAllDownloads() async {
+    try {
+      final list = List<Map<String, dynamic>>.from(downloadedSongsNotifier.value);
+      for (var song in list) {
+        final String? localPath = song['localPath'];
+        if (localPath != null) {
+          final file = File(localPath);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        }
+      }
+      downloadedSongsNotifier.value = [];
+      await _saveDownloads([]);
+    } catch (e) {
+      debugPrint("Error clearing downloads: $e");
+    }
+  }
+
+  Future<int> getTotalDownloadsSize() async {
+    int totalSize = 0;
+    try {
+      final list = downloadedSongsNotifier.value;
+      for (var song in list) {
+        final String? localPath = song['localPath'];
+        if (localPath != null) {
+          final file = File(localPath);
+          if (await file.exists()) {
+            totalSize += await file.length();
+          }
+        }
+      }
+    } catch (_) {}
+    return totalSize;
   }
 }

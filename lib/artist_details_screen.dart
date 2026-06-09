@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -8,13 +9,13 @@ import 'player_screen.dart';
 class ArtistDetailsScreen extends StatefulWidget {
   final String artistName;
   final String artistImage;
-  final List<Map<String, dynamic>> allSongs;
+  final List<Map<String, dynamic>> artistSongs;
 
   const ArtistDetailsScreen({
     super.key,
     required this.artistName,
     required this.artistImage,
-    required this.allSongs,
+    required this.artistSongs,
   });
 
   @override
@@ -24,6 +25,9 @@ class ArtistDetailsScreen extends StatefulWidget {
 class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
   late ScrollController _scrollController;
   final ValueNotifier<double> _scrollOffsetNotifier = ValueNotifier<double>(0.0);
+  bool _isSearching = false;
+  List<Map<String, dynamic>> _allArtistSongs = [];
+  List<Map<String, dynamic>> _filteredSongs = [];
 
   @override
   void initState() {
@@ -34,6 +38,10 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
         _scrollOffsetNotifier.value = _scrollController.offset;
       }
     });
+
+    // Receive the pre-filtered songs list directly from the parent screen
+    _allArtistSongs = widget.artistSongs;
+    _filteredSongs = List.from(_allArtistSongs);
   }
 
   @override
@@ -74,30 +82,6 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Filter songs for this artist (computed once on entry or state changes, not on scroll)
-    final artistSongs = widget.allSongs.where((song) {
-      final songArtist = (song['artist']?.toString() ?? '')
-          .toLowerCase()
-          .replaceAll(' ', '')
-          .replaceAll('.', '');
-      final queryArtist = widget.artistName
-          .toLowerCase()
-          .replaceAll(' ', '')
-          .replaceAll('.', '');
-
-      if (songArtist.contains(queryArtist) ||
-          queryArtist.contains(songArtist)) {
-        return true;
-      }
-      if (queryArtist.contains('yuvan') && songArtist.contains('yuvan')) {
-        return true;
-      }
-      if (queryArtist.contains('hiphop') && songArtist.contains('hiphop')) {
-        return true;
-      }
-      return false;
-    }).toList();
-
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: Stack(
@@ -185,7 +169,7 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Colors.white,
                           shadows: [
                             Shadow(
                               color: Colors.black.withValues(alpha: 0.4),
@@ -202,27 +186,30 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
             ),
           ),
 
-          // 3. Scrollable Content (Songs List inside a Curved sliding container - Rebuilds only once on load!)
+          // 3. Scrollable Content (Songs List inside a Curved sliding container - Virtualized for performance)
           Positioned.fill(
-            child: SingleChildScrollView(
+            child: CustomScrollView(
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  // Transparent spacer to push the sliding card below the visible header
-                  SizedBox(height: 330),
-
-                  // Sliding Songs Card
-                  Container(
+              cacheExtent: 1000,
+              slivers: [
+                // Transparent spacer to push the sliding card below the visible header
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 330),
+                ),
+                
+                // Curved sliding container header
+                SliverToBoxAdapter(
+                  child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                       boxShadow: [
                         BoxShadow(
                           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
                           blurRadius: 12,
-                          offset: Offset(0, -6),
+                          offset: const Offset(0, -6),
                         ),
                       ],
                     ),
@@ -241,9 +228,8 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                             ),
                           ),
                         ),
-
-                        SizedBox(height: 12),
-
+                        const SizedBox(height: 12),
+                        
                         // Songs Header Text
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -256,127 +242,157 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                             ),
                           ),
                         ),
-
-                        SizedBox(height: 16),
-
-                        // Songs List (List builder stays intact and is cached in build cycle)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                          child: artistSongs.isEmpty
-                              ? Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 40.0),
-                                    child: Text(
-                                      'No songs found for this artist.',
-                                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
-                                    ),
-                                  ),
-                                )
-                              : Column(
-                                  children: artistSongs.map((song) {
-                                    return Container(
-                                      margin: const EdgeInsets.symmetric(vertical: 4.0),
-                                      child: ListTile(
-                                        leading: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: SizedBox(
-                                            width: 56,
-                                            height: 56,
-                                            child: Image(
-                                              image: _getSongImageProvider(song),
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                final fallback = widget.artistImage;
-                                                if (fallback.startsWith('http')) {
-                                                  return CachedNetworkImage(
-                                                    imageUrl: fallback,
-                                                    fit: BoxFit.cover,
-                                                    width: 56,
-                                                    height: 56,
-                                                    errorWidget: (c, u, e) => Container(
-                                                      color: Colors.grey.shade800,
-                                                      child: const Icon(
-                                                        Icons.music_note,
-                                                        color: Colors.white54,
-                                                        size: 28,
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                                return Container(
-                                                  color: Colors.grey.shade800,
-                                                  child: const Icon(
-                                                    Icons.music_note,
-                                                    color: Colors.white54,
-                                                    size: 28,
-                                                  ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                        ),
-                                        title: Text(
-                                          song['title'] ?? '',
-                                          style: GoogleFonts.inter(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: Theme.of(context).colorScheme.primary,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        subtitle: Text(
-                                          song['artist'] ?? '',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        trailing: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          children: [
-                                            Icon(
-                                              Icons.favorite_border,
-                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
-                                              size: 18,
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              _getSongDuration(song),
-                                              style: GoogleFonts.inter(
-                                                fontSize: 10,
-                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        onTap: () {
-                                          AudioService().playSong(
-                                            song,
-                                            playlistContext: artistSongs,
-                                          );
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (context) => const PlayerScreen(),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                        ),
-
-                        SizedBox(height: 120),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+
+                // Handle empty state virtualized
+                if (_filteredSongs.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Container(
+                      color: Theme.of(context).colorScheme.surface,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40.0),
+                          child: Text(
+                            'No songs found for this artist.',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Virtualized List of Songs
+                if (_filteredSongs.isNotEmpty)
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final song = _filteredSongs[index];
+                        return Container(
+                          color: Theme.of(context).colorScheme.surface,
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: SizedBox(
+                                  width: 56,
+                                  height: 56,
+                                  child: Image(
+                                    image: ResizeImage(_getSongImageProvider(song), width: 100, height: 100),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      final fallback = widget.artistImage;
+                                      if (fallback.startsWith('http') && !fallback.contains('5e049992ef02750dad84fe7d44c061bc')) {
+                                        return CachedNetworkImage(
+                                          imageUrl: fallback,
+                                          fit: BoxFit.cover,
+                                          width: 56,
+                                          height: 56,
+                                          memCacheWidth: 100,
+                                          memCacheHeight: 100,
+                                          errorWidget: (c, u, e) => Container(
+                                            color: Colors.grey.shade800,
+                                            child: const Icon(
+                                              Icons.music_note,
+                                              color: Colors.white54,
+                                              size: 28,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      // Generate an avatar with the song's artist name or the screen's artist name
+                                      final artistName = song['artist'] ?? widget.artistName;
+                                      return CachedNetworkImage(
+                                        imageUrl: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(artistName)}&background=random&size=128',
+                                        fit: BoxFit.cover,
+                                        width: 56,
+                                        height: 56,
+                                        memCacheWidth: 100,
+                                        memCacheHeight: 100,
+                                        errorWidget: (c, u, e) => Container(
+                                          color: Colors.grey.shade800,
+                                          child: const Icon(
+                                            Icons.music_note,
+                                            color: Colors.white54,
+                                            size: 28,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                song['title'] ?? '',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                song['composer'] ?? song['artist'] ?? '',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Icon(
+                                    Icons.favorite_border,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _getSongDuration(song),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                AudioService().playSong(
+                                  song,
+                                  playlistContext: _filteredSongs,
+                                );
+                                Navigator.of(context).push(
+                                  CupertinoPageRoute(
+                                    builder: (context) => const PlayerScreen(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      childCount: _filteredSongs.length,
+                    ),
+                  ),
+
+                // Bottom spacer to allow scrolling past list elements
+                SliverToBoxAdapter(
+                  child: Container(
+                    height: 120,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -435,35 +451,77 @@ class _ArtistDetailsScreenState extends State<ArtistDetailsScreen> {
                     Expanded(
                       child: Center(
                         child: Opacity(
-                          opacity: navBarOpacity,
+                          opacity: _isSearching ? 1.0 : navBarOpacity,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Text(
-                              widget.artistName,
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            child: _isSearching
+                                ? Container(
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: TextField(
+                                      autofocus: true,
+                                      style: TextStyle(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          fontSize: 14),
+                                      decoration: InputDecoration(
+                                        hintText: 'Search songs...',
+                                        hintStyle: TextStyle(
+                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                                            fontSize: 14),
+                                        border: InputBorder.none,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                      ),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          if (value.isEmpty) {
+                                            _filteredSongs = List.from(_allArtistSongs);
+                                          } else {
+                                            final lowercaseQuery = value.toLowerCase();
+                                            _filteredSongs = _allArtistSongs.where((song) {
+                                              final title = (song['title'] ?? '').toString().toLowerCase();
+                                              return title.contains(lowercaseQuery);
+                                            }).toList();
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  )
+                                : Text(
+                                    widget.artistName,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                           ),
                         ),
                       ),
                     ),
 
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () {
+                        setState(() {
+                          _isSearching = !_isSearching;
+                          if (!_isSearching) {
+                            _filteredSongs = List.from(_allArtistSongs);
+                          }
+                        });
+                      },
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: navIconBg,
+                          color: _isSearching ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.95) : navIconBg,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          FeatherIcons.search,
-                          color: navIconColor,
+                          _isSearching ? Icons.close : FeatherIcons.search,
+                          color: _isSearching ? Theme.of(context).colorScheme.primary : navIconColor,
                           size: 20,
                         ),
                       ),

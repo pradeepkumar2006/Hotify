@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -79,7 +80,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Icon(Icons.check_circle, color: Color(0xFF00FF83)),
                   SizedBox(width: 12),
                   Text(
-                    'Welcome to Hotify, ${_nameController.text.trim()}!',
+                    'Welcome to Vibeflow, ${_nameController.text.trim()}!',
                     style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -93,7 +94,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
           // Redirect to Home Screen
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            CupertinoPageRoute(builder: (context) => const HomeScreen()),
             (route) => false,
           );
         }

@@ -52,6 +52,11 @@ dependencies:
   image_picker: ^1.1.2
   permission_handler: ^12.0.3
   connectivity_plus: ^7.1.1
+  youtube_explode_dart: ^3.1.0
+  flutter_card_swiper: ^7.2.0
+  flutter_screenutil: ^5.9.3
+  share_plus: ^13.1.0
+  screenshot: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -80,6 +85,7 @@ flutter:
   assets:
     - assets/logo.png
     - assets/tamil_songs.json
+    - assets/english_songs.json
     - assets/sai_abhyankkar.png
     - assets/anirudh.jpg
     - assets/yuvan.jpg
@@ -99,6 +105,15 @@ flutter:
     - assets/ilaiyaraaja.png
     - assets/karthik_raja.png
     - assets/default_playlist.png
+    - assets/various_composers.png
+    - assets/msv.png
+    - assets/deva.jpg
+    - assets/hello_melophile_siri.mp3
+    - assets/crossover_1.png
+    - assets/crossover_2.png
+    - assets/crossover_3.png
+    - assets/crossover_4.png
+    - assets/dummy_pad.bin
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -125,3 +140,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"

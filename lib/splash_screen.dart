@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'init_status.dart';
@@ -52,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         // Firebase not ready, go directly to HomeScreen (or Guest mode)
         debugPrint('⚠️ Firebase not initialized, navigating to HomeScreen directly');
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => HomeScreen()),
+          CupertinoPageRoute(builder: (_) => HomeScreen()),
         );
       }
     });
@@ -114,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               child: Column(
                 children: [
                   Text(
-                    'HOTIFY',
+                    'Vibeflow',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
@@ -153,7 +154,7 @@ class MainPlaceholder extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Hotify Home', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+        title: Text('Vibeflow Home', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
       ),
       body: Center(
         child: Column(
@@ -169,7 +170,7 @@ class MainPlaceholder extends StatelessWidget {
             ),
             SizedBox(height: 24),
             Text(
-              'Welcome to Hotify!',
+              'Welcome to Vibeflow!',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
             ),
             SizedBox(height: 8),

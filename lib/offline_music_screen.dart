@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -16,6 +15,20 @@ class OfflineMusicScreen extends StatefulWidget {
 
 class _OfflineMusicScreenState extends State<OfflineMusicScreen> {
   ImageProvider _getImageProvider(Map<String, dynamic> song) {
+    if ((song['language'] ?? '').toString().toLowerCase() == 'english') {
+      final yearVal = int.tryParse(song['year']?.toString() ?? '');
+      if (yearVal != null) {
+        if (yearVal <= 2010) {
+          return const AssetImage('assets/crossover_1.png');
+        } else if (yearVal <= 2015) {
+          return const AssetImage('assets/crossover_2.png');
+        } else if (yearVal <= 2020) {
+          return const AssetImage('assets/crossover_3.png');
+        } else {
+          return const AssetImage('assets/crossover_4.png');
+        }
+      }
+    }
     if (song['downloaded_cover'] != null && song['downloaded_cover'].isNotEmpty) {
       return CachedNetworkImageProvider(song['downloaded_cover']);
     } else if (song['img'] != null && song['img'].isNotEmpty) {
@@ -83,6 +96,7 @@ class _OfflineMusicScreenState extends State<OfflineMusicScreen> {
 
           return ListView.builder(
             physics: const BouncingScrollPhysics(),
+            cacheExtent: 1000,
             padding: const EdgeInsets.only(top: 8, bottom: 80),
             itemCount: downloadedSongs.length,
             itemBuilder: (context, index) {
@@ -113,7 +127,7 @@ class _OfflineMusicScreenState extends State<OfflineMusicScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       image: DecorationImage(
-                        image: _getImageProvider(song),
+                        image: ResizeImage(_getImageProvider(song), width: 100, height: 100),
                         fit: BoxFit.cover,
                       ),
                       boxShadow: [

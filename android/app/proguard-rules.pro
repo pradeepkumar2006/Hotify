@@ -22,7 +22,9 @@
 -keep class android.media.MediaMetadata$Builder { *; }
 
 # --- Keep just_audio / ExoPlayer classes ---
+-keep class com.ryanheise.just_audio.** { *; }
 -keep class com.google.android.exoplayer2.** { *; }
+-keep class androidx.media3.** { *; }
 
 # --- Keep Flutter plugin registrant ---
 -keep class io.flutter.plugins.** { *; }

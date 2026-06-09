@@ -13,7 +13,10 @@ class HelpSupportScreen extends StatelessWidget {
         elevation: 0,
         backgroundColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(FeatherIcons.arrowLeft, color: Theme.of(context).iconTheme.color),
+          icon: Icon(
+            FeatherIcons.arrowLeft,
+            color: Theme.of(context).iconTheme.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -33,11 +36,18 @@ class HelpSupportScreen extends StatelessWidget {
           children: [
             // Welcome Section
             _buildSectionHeader(context, 'Welcome', FeatherIcons.smile),
-            _buildParagraph(context, "Welcome to our Music App! We're here to help you enjoy the best music experience."),
+            _buildParagraph(
+              context,
+              "Welcome to our Music App! We're here to help you enjoy the best music experience.",
+            ),
             const SizedBox(height: 32),
 
             // FAQ Section
-            _buildSectionHeader(context, 'Frequently Asked Questions', FeatherIcons.helpCircle),
+            _buildSectionHeader(
+              context,
+              'Frequently Asked Questions',
+              FeatherIcons.helpCircle,
+            ),
             _buildFaqItem(
               context,
               'How do I create a playlist?',
@@ -62,18 +72,36 @@ class HelpSupportScreen extends StatelessWidget {
 
             // Contact Support
             _buildSectionHeader(context, 'Contact Support', FeatherIcons.mail),
-            _buildParagraph(context, 'If you have any issues, suggestions, or feedback, contact us:'),
+            _buildParagraph(
+              context,
+              'If you have any issues, suggestions, or feedback, contact us:',
+            ),
             const SizedBox(height: 12),
-            _buildInfoRow(context, FeatherIcons.atSign, 'Email:', 'astraardency@gmail.com'),
+            _buildInfoRow(
+              context,
+              FeatherIcons.atSign,
+              'Email:',
+              'astraardency@gmail.com',
+            ),
             const SizedBox(height: 12),
-            _buildInfoRow(context, FeatherIcons.messageSquare, 'Feedback:', 'We value your suggestions and continuously improve the app based on user feedback.'),
+            _buildInfoRow(
+              context,
+              FeatherIcons.messageSquare,
+              'Feedback:',
+              'We value your suggestions and continuously improve the app based on user feedback.',
+            ),
             const SizedBox(height: 32),
 
             // App Info
             _buildSectionHeader(context, 'App Information', FeatherIcons.info),
             _buildInfoRow(context, FeatherIcons.tag, 'Version:', '1.0.0'),
             const SizedBox(height: 12),
-            _buildInfoRow(context, FeatherIcons.smartphone, 'Platform:', 'Android & iOS'),
+            _buildInfoRow(
+              context,
+              FeatherIcons.smartphone,
+              'Platform:',
+              'Android & iOS',
+            ),
             const SizedBox(height: 32),
 
             // Creators
@@ -88,9 +116,12 @@ class HelpSupportScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             _buildCreatorBadge(context, 'Pradeep Kumar'),
-            _buildCreatorBadge(context, 'Prathos'),
+            _buildCreatorBadge(context, 'Prathosh'),
             const SizedBox(height: 16),
-            _buildParagraph(context, 'Passionate developers dedicated to creating a seamless and enjoyable music experience for everyone.'),
+            _buildParagraph(
+              context,
+              'Passionate developers dedicated to creating a seamless and enjoyable music experience for everyone.',
+            ),
             const SizedBox(height: 32),
 
             // Thank You
@@ -114,7 +145,9 @@ class HelpSupportScreen extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       height: 1.5,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -136,7 +169,11 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, IconData icon) {
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    IconData icon,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -199,7 +236,9 @@ class HelpSupportScreen extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               height: 1.5,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -207,11 +246,20 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
+  Widget _buildInfoRow(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), size: 18),
+        Icon(
+          icon,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+          size: 18,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: RichText(
@@ -222,11 +270,16 @@ class HelpSupportScreen extends StatelessWidget {
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
               children: [
-                TextSpan(text: '$label ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                TextSpan(
+                  text: '$label ',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 TextSpan(
                   text: value,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -248,7 +301,11 @@ class HelpSupportScreen extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(FeatherIcons.user, size: 14, color: Theme.of(context).colorScheme.primary),
+          Icon(
+            FeatherIcons.user,
+            size: 14,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(width: 8),
           Text(
             name,

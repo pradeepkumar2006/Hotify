@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter/services.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,14 +11,37 @@ import 'init_status.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'services/audio_service.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'utils/theme_notifier.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'connectivity_wrapper.dart';
 
 // bool firebaseInitialized = false; // moved to init_status.dart
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ─── High Refresh Rate ───────────────────────────────────────────────────
+  // Tell the Flutter engine to use high-performance latency mode so frames
+  // are delivered as fast as possible to match the display's refresh rate.
+  // The native side (MainActivity.kt) already picks the highest display mode.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Request a frame immediately to warm up the rendering pipeline
+    SchedulerBinding.instance.scheduleFrame();
+  });
+
+  // ─── System UI ───────────────────────────────────────────────────────────
+  // Transparent status bar for an edge-to-edge, immersive look.
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
+
+  // Make status bar and nav bar fully transparent (Android 10+)
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   // Custom Error Widget to show screen-level exceptions instead of a silent white screen
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -84,6 +110,7 @@ void main() async {
   // Start initializations in the background so they don't block runApp and cause a white screen
   debugPrint('Starting service initialization...');
   _initializeServices();
+  _preloadSongs();
 
   // Request notification permissions for Android 13+ is moved to splash screen/home screen to prevent ANR.
 
@@ -116,29 +143,104 @@ Future<void> _initializeServices() async {
   }
 }
 
+Future<void> _preloadSongs() async {
+  try {
+    debugPrint('Preloading songs in the background...');
+
+    // Load and parse Tamil songs
+    final String tamilJson = await rootBundle.loadString(
+      'assets/tamil_songs.json',
+    );
+    final List<Map<String, dynamic>> tamilSongs = await compute(
+      parseSongsJson,
+      tamilJson,
+    );
+
+    // Load and parse English songs
+    List<Map<String, dynamic>> englishSongs = [];
+    try {
+      final String englishJson = await rootBundle.loadString(
+        'assets/english_songs.json',
+      );
+      englishSongs = await compute(parseSongsJson, englishJson);
+    } catch (e) {
+      debugPrint('Error preloading english songs (non-fatal): $e');
+    }
+
+    // Combine both lists
+    preloadedSongs = [...tamilSongs, ...englishSongs];
+    debugPrint(
+      'Preloaded ${preloadedSongs.length} total songs (${tamilSongs.length} Tamil, ${englishSongs.length} English).',
+    );
+  } catch (e) {
+    debugPrint('Error preloading songs: $e');
+  }
+}
+
+List<Map<String, dynamic>> parseSongsJson(String jsonString) {
+  final List<dynamic> jsonList = json.decode(jsonString);
+  final allSongs = jsonList
+      .map((item) => Map<String, dynamic>.from(item as Map))
+      .toList();
+
+  final filterKeywords = [
+    'remix',
+    'theme',
+    'instrumental',
+    'instru',
+    'bgm',
+    'score',
+    'loop',
+    'cut',
+    'layer',
+    'stem',
+    'teaser',
+    'trailer',
+  ];
+
+  return allSongs.where((song) {
+    final title = (song['title'] ?? '').toString().toLowerCase();
+    final genre = (song['genre'] ?? '').toString().toLowerCase();
+
+    for (final kw in filterKeywords) {
+      if (title.contains(kw) || genre.contains(kw)) {
+        return false;
+      }
+    }
+    return true;
+  }).toList();
+}
+
 class HotifyApp extends StatelessWidget {
   const HotifyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     debugPrint('Building HotifyApp');
-    return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
-      builder: (context, currentThemeMode, child) {
-        return MaterialApp(
-          title: 'Hotify Open Audio',
+    return ScreenUtilInit(
+      designSize: const Size(390, 844),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: themeNotifier,
+          builder: (context, currentThemeMode, child) {
+            return MaterialApp(
+          title: 'Vibeflow Open Audio',
           debugShowCheckedModeBanner: false,
           themeMode: currentThemeMode,
+          // Global scroll behavior — makes ALL lists feel smooth & bouncy
+          scrollBehavior: const _BouncingScrollBehavior(),
           theme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.light,
-            scaffoldBackgroundColor: const Color(0xFFF4F5F7), // Soft light grey
+            scaffoldBackgroundColor: const Color(0xFFF4F5F7),
             primaryColor: Colors.black,
             colorScheme: ColorScheme.fromSeed(
               seedColor: Colors.black,
               primary: Colors.black,
               onPrimary: Colors.white,
-              secondary: const Color(0xFF1E1E24), // Dark charcoal
+              secondary: const Color(0xFF1E1E24),
               surface: Colors.white,
               onSurface: const Color(0xFF111111),
             ),
@@ -148,25 +250,26 @@ class HotifyApp extends StatelessWidget {
           darkTheme: ThemeData(
             useMaterial3: true,
             brightness: Brightness.dark,
-            scaffoldBackgroundColor: const Color(0xFF121212), // Deep dark grey
+            scaffoldBackgroundColor: const Color(0xFF121212),
             primaryColor: Colors.white,
             colorScheme: ColorScheme.fromSeed(
               seedColor: Colors.white,
               brightness: Brightness.dark,
               primary: Colors.white,
               onPrimary: Colors.black,
-              secondary: const Color(0xFFEBECEF), // Light grey
-              surface: const Color(0xFF1E1E24), // Darker surface
+              secondary: const Color(0xFFEBECEF),
+              surface: const Color(0xFF1E1E24),
               onSurface: Colors.white,
             ),
-            textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).apply(
-              bodyColor: Colors.white,
-              displayColor: Colors.white,
-            ),
+            textTheme: GoogleFonts.interTextTheme(
+              ThemeData.dark().textTheme,
+            ).apply(bodyColor: Colors.white, displayColor: Colors.white),
             iconTheme: const IconThemeData(color: Colors.white),
           ),
           home: const SplashScreen(),
         );
+      },
+    );
       },
     );
   }
@@ -284,5 +387,16 @@ class _AuthGateState extends State<AuthGate> {
         return const LoginScreen();
       },
     );
+  }
+}
+
+/// Global scroll behavior that enables BouncingScrollPhysics on Android
+/// giving the app a fluid, premium iOS-like feel everywhere.
+class _BouncingScrollBehavior extends ScrollBehavior {
+  const _BouncingScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
   }
 }

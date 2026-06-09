@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -66,7 +67,7 @@ class NoInternetScreen extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
+                      CupertinoPageRoute(
                         builder: (context) => const OfflineMusicScreen(),
                       ),
                     );

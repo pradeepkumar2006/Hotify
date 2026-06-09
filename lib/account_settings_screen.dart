@@ -225,7 +225,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
       value: value,
       onChanged: onChanged,
-      activeColor: Theme.of(context).colorScheme.primary,
+      activeThumbColor: Theme.of(context).colorScheme.primary,
       title: Text(
         title,
         style: GoogleFonts.inter(

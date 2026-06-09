@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -83,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           // Navigate to Home Screen
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            CupertinoPageRoute(builder: (context) => const HomeScreen()),
           );
         }
       } on FirebaseAuthException catch (e) {
@@ -142,13 +143,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [],
-      ),
       body: Container(
         height: double.infinity,
         width: double.infinity,
@@ -202,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   Text(
-                    'Free on Hotify.',
+                    'Free on Vibeflow.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                       fontSize: 32,
@@ -412,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                            CupertinoPageRoute(builder: (context) => const SignUpScreen()),
                           );
                         },
                         child: Text(
@@ -568,7 +562,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          CupertinoPageRoute(builder: (context) => const HomeScreen()),
         );
       }
     } catch (e) {
@@ -605,7 +599,7 @@ class _LoginScreenState extends State<LoginScreen> {
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          CupertinoPageRoute(builder: (context) => const HomeScreen()),
         );
       }
     });

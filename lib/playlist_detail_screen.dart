@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
@@ -40,6 +41,13 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
       AudioService().likedSongsNotifier.addListener(_onLikedSongsChanged);
     } else {
       _songs = List<Map<String, dynamic>>.from(widget.playlist['songs'] ?? []);
+      AudioService().userPlaylistsNotifier.addListener(_onCustomPlaylistChanged);
+    }
+
+    // Fallback: If the playlist image is missing or is the dummy Pinterest image, use the artist image instead
+    if ((_image.isEmpty || _image == 'assets/logo.png' || _image.contains('5e049992ef02750dad84fe7d44c061bc')) && _songs.isNotEmpty) {
+      final firstArtist = _songs.first['artist'] ?? '';
+      _image = _getArtistPicture(firstArtist, '');
     }
   }
 
@@ -51,10 +59,24 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     }
   }
 
+  void _onCustomPlaylistChanged() {
+    if (mounted) {
+      final updatedPlaylists = AudioService().userPlaylistsNotifier.value;
+      final idx = updatedPlaylists.indexWhere((p) => p['name'] == _name);
+      if (idx != -1) {
+        setState(() {
+          _songs = List<Map<String, dynamic>>.from(updatedPlaylists[idx]['songs'] ?? []);
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     if (widget.playlist['isLikedSongs'] == true) {
       AudioService().likedSongsNotifier.removeListener(_onLikedSongsChanged);
+    } else {
+      AudioService().userPlaylistsNotifier.removeListener(_onCustomPlaylistChanged);
     }
     super.dispose();
   }
@@ -76,10 +98,83 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     if (path.startsWith('assets/')) {
       return AssetImage(path);
     }
-    if (path.startsWith('http://') || path.startsWith('https/')) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
       return CachedNetworkImageProvider(path);
     }
     return FileImage(File(path));
+  }
+
+  String _getArtistPicture(String artistName, String fallbackImageUrl) {
+    final String cleanArtist = artistName.toLowerCase().replaceAll(' ', '').replaceAll('.', '');
+    
+    final Map<String, String> artistImages = {
+      'arrahman': 'assets/ar_rahman.png',
+      'anirudh': 'assets/anirudh.jpg',
+      'yuvansankar': 'assets/yuvan.jpg',
+      'yuvanshankar': 'assets/yuvan.jpg',
+      'deva': 'assets/deva.jpg',
+      'hiphopaadhi': 'assets/hiphop_tamizha.png',
+      'hiphop': 'assets/hiphop_tamizha.png',
+      'gvprakash': 'assets/gv_prakash.jpg',
+      'saiabhyankkar': 'assets/sai_abhyankkar.png',
+      'saiabhyankar': 'assets/sai_abhyankkar.png',
+      'srikanthdeva': 'assets/srikanth_deva.png',
+      'vijayantony': 'assets/vijay_antony.png',
+      'harrisjayaraj': 'assets/harris_jayaraj.png',
+      'dsp': 'assets/dsp.png',
+      'devissriprasad': 'assets/dsp.png',
+      'devisriprasad': 'assets/dsp.png',
+      'dimman': 'assets/imman.png',
+      'imman': 'assets/imman.png',
+      'snarunagiri': 'assets/sn_arunagiri.png',
+      'arunagiri': 'assets/sn_arunagiri.png',
+      'ilaiyaraaja': 'assets/ilaiyaraaja.png',
+      'ilayaraja': 'assets/ilaiyaraaja.png',
+      'karthikraja': 'assets/karthik_raja.png',
+      'msviswanathan': 'assets/msv.png',
+      'viswanathan': 'assets/msv.png',
+      'variouscomposers': 'assets/various_composers.png',
+    };
+
+    for (final entry in artistImages.entries) {
+      if (cleanArtist.contains(entry.key) || entry.key.contains(cleanArtist)) {
+        return entry.value;
+      }
+    }
+
+    if (fallbackImageUrl.isNotEmpty && !fallbackImageUrl.contains('5e049992ef02750dad84fe7d44c061bc')) {
+      return fallbackImageUrl;
+    }
+    return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(artistName)}&background=random&size=256';
+  }
+
+  ImageProvider _getSongImageProvider(Map<String, dynamic> song) {
+    // Check if English song for crossover card image
+    if ((song['language'] ?? '').toString().toLowerCase() == 'english') {
+      final yearVal = int.tryParse(song['year']?.toString() ?? '');
+      if (yearVal != null) {
+        if (yearVal <= 2010) {
+          return const AssetImage('assets/crossover_1.png');
+        } else if (yearVal <= 2015) {
+          return const AssetImage('assets/crossover_2.png');
+        } else if (yearVal <= 2020) {
+          return const AssetImage('assets/crossover_3.png');
+        } else {
+          return const AssetImage('assets/crossover_4.png');
+        }
+      }
+    }
+
+    final String artist = song['artist'] ?? '';
+    String imagePath = _getArtistPicture(artist, song['img'] ?? '');
+    
+    if (imagePath.startsWith('assets/') &&
+        !imagePath.endsWith('.jpg') &&
+        !imagePath.endsWith('.jpeg') &&
+        !imagePath.endsWith('.png')) {
+      imagePath = _getArtistPicture(artist, song['img'] ?? '');
+    }
+    return _getImageProvider(imagePath);
   }
 
   String _getPlaylistDuration() {
@@ -101,6 +196,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   void _showAddSongsSheet() {
     final searchController = TextEditingController();
     List<Map<String, dynamic>> filteredSongs = List.from(widget.allSongs);
+    Timer? searchDebounce;
 
     showModalBottomSheet(
       context: context,
@@ -155,12 +251,40 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                           ),
                         ),
                         onChanged: (val) {
-                          setSheetState(() {
-                            filteredSongs = widget.allSongs.where((song) {
-                              final title = (song['title'] ?? '').toString().toLowerCase();
-                              final artist = (song['artist'] ?? '').toString().toLowerCase();
-                              return title.contains(val.toLowerCase()) || artist.contains(val.toLowerCase());
-                            }).toList();
+                          searchDebounce?.cancel();
+                          searchDebounce = Timer(const Duration(milliseconds: 250), () async {
+                            final query = val.toLowerCase().trim();
+                            
+                            List<Map<String, dynamic>> localFiltered = [];
+                            if (query.isEmpty) {
+                              localFiltered = List.from(widget.allSongs);
+                            } else {
+                              localFiltered = widget.allSongs.where((song) {
+                                final title = (song['title'] ?? '').toString().toLowerCase();
+                                final artist = (song['artist'] ?? '').toString().toLowerCase();
+                                return title.contains(query) || artist.contains(query);
+                              }).toList();
+                            }
+                            
+                            if (context.mounted) {
+                              setSheetState(() {
+                                filteredSongs = localFiltered;
+                              });
+                            }
+                            
+                            if (query.isNotEmpty) {
+                              final jioSaavnResults = await AudioService().searchJioSaavn(query);
+                              if (context.mounted && searchController.text.toLowerCase().trim() == query) {
+                                setSheetState(() {
+                                  final existingIds = filteredSongs.map((s) => s['id'].toString()).toSet();
+                                  for (var js in jioSaavnResults) {
+                                    if (!existingIds.contains(js['id'].toString())) {
+                                      filteredSongs.add(js);
+                                    }
+                                  }
+                                });
+                              }
+                            }
                           });
                         },
                       ),
@@ -168,6 +292,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                       Expanded(
                         child: ListView.builder(
                           controller: scrollController,
+                          cacheExtent: 1000,
                           itemCount: filteredSongs.length,
                           itemBuilder: (context, index) {
                             final song = filteredSongs[index];
@@ -179,7 +304,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(6),
                                   image: DecorationImage(
-                                    image: _getImageProvider(song['img'] ?? 'assets/logo.png'),
+                                    image: ResizeImage(_getSongImageProvider(song), width: 80, height: 80),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -218,7 +343,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: alreadyAdded ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12) : Theme.of(context).colorScheme.primary,
-                                  foregroundColor: alreadyAdded ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38) : Colors.white,
+                                  foregroundColor: alreadyAdded ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38) : Theme.of(context).colorScheme.onPrimary,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
@@ -267,6 +392,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 child: Image(
                   image: _getImageProvider(_image),
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                    'assets/logo.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
@@ -311,8 +440,17 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         ),
                       )
                     : Image(
-                        image: _getImageProvider(_image),
+                        image: (_image.isEmpty || 
+                                _image == 'assets/logo.png' || 
+                                _image.contains('5e049992ef02750dad84fe7d44c061bc') || 
+                                _image.contains('various_composers.png')) && _songs.isNotEmpty
+                            ? _getSongImageProvider(_songs.first)
+                            : _getImageProvider(_image),
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Image.asset(
+                          'assets/logo.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
               ),
               // Rest of the content wrapped in SafeArea (excluding top notch)
@@ -456,7 +594,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                               onPressed: _showAddSongsSheet,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Theme.of(context).colorScheme.primary,
-                                foregroundColor: Colors.white,
+                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               ),
                               child: Text('Add Songs', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -474,6 +612,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     )
                   : ListView.builder(
                       physics: const BouncingScrollPhysics(),
+                      cacheExtent: 1000,
                       padding: const EdgeInsets.only(top: 8, bottom: 150),
                       itemCount: _songs.length,
                       itemBuilder: (context, index) {
@@ -485,8 +624,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                               width: 48,
                               height: 48,
                               child: Image(
-                                image: _getImageProvider(song['img'] ?? 'assets/logo.png'),
+                                image: ResizeImage(_getSongImageProvider(song), width: 80, height: 80),
                                 fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Image.asset(
+                                  'assets/logo.png',
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
                           ),

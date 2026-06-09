@@ -1,9 +1,13 @@
 import 'dart:ui';
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:path_provider/path_provider.dart';
 import 'services/audio_service.dart';
 import 'services/download_service.dart';
+import 'utils/theme_notifier.dart';
 
 class PlayerScreen extends StatefulWidget {
   const PlayerScreen({super.key});
@@ -13,7 +17,64 @@ class PlayerScreen extends StatefulWidget {
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  bool _isShuffleEnabled = false;
+  Future<void> _showAddToPlaylistSheet(Map<String, dynamic> song) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/playlists.json');
+    List<dynamic> playlists = [];
+    if (await file.exists()) {
+      playlists = json.decode(await file.readAsString());
+    }
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('Add to Playlist', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+              ),
+              if (playlists.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text('No custom playlists found. Create one in the Home screen.', style: TextStyle(color: Colors.white54)),
+                )
+              else
+                ...playlists.map((playlist) {
+                  return ListTile(
+                    leading: Icon(Icons.queue_music_rounded, color: Theme.of(context).colorScheme.primary),
+                    title: Text(playlist['name'], style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                    onTap: () async {
+                      List<dynamic> songs = playlist['songs'] ?? [];
+                      if (!songs.any((s) => s['id'] == song['id'])) {
+                        songs.add(song);
+                        playlist['songs'] = songs;
+                        await AudioService().saveUserPlaylists(List<Map<String, dynamic>>.from(playlists.map((p) => Map<String, dynamic>.from(p))));
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Added to ${playlist['name']}')));
+                      } else {
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Already in ${playlist['name']}')));
+                      }
+                    },
+                  );
+                }),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   String _getArtistPicture(String artistName, String fallbackImageUrl) {
     final String cleanArtist = artistName.toLowerCase().replaceAll(' ', '').replaceAll('.', '');
@@ -23,7 +84,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       'anirudh': 'assets/anirudh.jpg',
       'yuvansankar': 'assets/yuvan.jpg',
       'yuvanshankar': 'assets/yuvan.jpg',
-      'deva': 'https://i.pinimg.com/1200x/ed/ae/19/edae1927b2094577b713a011432c2856.jpg',
+      'deva': 'assets/deva.jpg',
       'hiphopaadhi': 'assets/hiphop_tamizha.png',
       'hiphop': 'assets/hiphop_tamizha.png',
       'gvprakash': 'assets/gv_prakash.jpg',
@@ -32,6 +93,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
       'srikanthdeva': 'assets/srikanth_deva.png',
       'vijayantony': 'assets/vijay_antony.png',
       'harrisjayaraj': 'assets/harris_jayaraj.png',
+      // DSP / Devi Sri Prasad
+      'dsp': 'assets/dsp.png',
+      'devissriprasad': 'assets/dsp.png',
+      'devisriprasad': 'assets/dsp.png',
+      // D. Imman
+      'dimman': 'assets/imman.png',
+      'imman': 'assets/imman.png',
+      // S. N. Arunagiri
+      'snarunagiri': 'assets/sn_arunagiri.png',
+      'arunagiri': 'assets/sn_arunagiri.png',
+      // Ilaiyaraaja
+      'ilaiyaraaja': 'assets/ilaiyaraaja.png',
+      'ilayaraja': 'assets/ilaiyaraaja.png',
+      // Karthik Raja
+      'karthikraja': 'assets/karthik_raja.png',
+      'msviswanathan': 'assets/msv.png',
+      'viswanathan': 'assets/msv.png',
+      // Various Composers
+      'variouscomposers': 'assets/various_composers.png',
     };
 
     for (final entry in artistImages.entries) {
@@ -40,10 +120,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
     }
 
-    if (fallbackImageUrl.isNotEmpty) {
+    if (fallbackImageUrl.isNotEmpty && !fallbackImageUrl.contains('5e049992ef02750dad84fe7d44c061bc')) {
       return fallbackImageUrl;
     }
-    return 'https://i.pinimg.com/736x/5e/04/99/5e049992ef02750dad84fe7d44c061bc.jpg';
+    // Generic fallback instead of the Movie 3 poster
+    return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(artistName)}&background=random&size=512';
   }
 
   ImageProvider _getImageProvider(String path) {
@@ -57,7 +138,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ValueListenableBuilder<Color>(
+      valueListenable: accentColorNotifier,
+      builder: (context, accentColor, _) {
+        return Scaffold(
+          resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFF121212), // Dark fallback
       body: ValueListenableBuilder<Map<String, dynamic>?>(
         valueListenable: AudioService().currentSongNotifier,
@@ -69,28 +154,52 @@ class _PlayerScreenState extends State<PlayerScreen> {
           final String title = song['title'] ?? 'Unknown';
           final String artist = song['artist'] ?? 'Unknown';
           final String imageUrl = song['img'] ?? '';
-          final String artistPic = _getArtistPicture(artist, imageUrl);
+          
+          String artistPic = '';
+          if ((song['language'] ?? '').toString().toLowerCase() == 'english') {
+            final yearVal = int.tryParse(song['year']?.toString() ?? '');
+            if (yearVal != null) {
+              if (yearVal <= 2010) {
+                artistPic = 'assets/crossover_1.png';
+              } else if (yearVal <= 2015) {
+                artistPic = 'assets/crossover_2.png';
+              } else if (yearVal <= 2020) {
+                artistPic = 'assets/crossover_3.png';
+              } else {
+                artistPic = 'assets/crossover_4.png';
+              }
+            }
+          }
+          if (artistPic.isEmpty) {
+            artistPic = _getArtistPicture(artist, imageUrl);
+          }
           final ImageProvider artistPicProvider = _getImageProvider(artistPic);
 
           return Stack(
             children: [
               // 1. Full Screen Blurred Background Image
+              // RepaintBoundary prevents the blur from repainting every 200ms
+              // when the position slider updates.
               Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: artistPicProvider,
-                      fit: BoxFit.cover,
+                child: RepaintBoundary(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: artistPicProvider,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
               ),
-              // Glassmorphic dark blur overlay
+              // Glassmorphic dark blur overlay — also isolated in its own layer
               Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 45.0, sigmaY: 45.0),
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.62),
+                child: RepaintBoundary(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 40.0, sigmaY: 40.0),
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.60),
+                    ),
                   ),
                 ),
               ),
@@ -182,7 +291,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                  child: Icon(
                                    Icons.music_note,
                                    size: 80,
-                                   color: Color(0xFFE5B3B3),
+                                   color: accentColor,
                                  ),
                                ),
                              ),
@@ -201,7 +310,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                              style: GoogleFonts.outfit(
                                fontSize: 24,
                                fontWeight: FontWeight.bold,
-                               color: Theme.of(context).colorScheme.surface,
+                               color: Colors.white,
                              ),
                              maxLines: 1,
                              overflow: TextOverflow.ellipsis,
@@ -253,8 +362,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                    SliderTheme(
                                      data: SliderTheme.of(context).copyWith(
                                        trackHeight: 2.5,
-                                       thumbColor: const Color(0xFFE5B3B3),
-                                       activeTrackColor: const Color(0xFFE5B3B3),
+                                       thumbColor: accentColor,
+                                       activeTrackColor: accentColor,
                                        inactiveTrackColor: Colors.white24,
                                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5.0),
                                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 10.0),
@@ -307,13 +416,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         children: [
                           IconButton(
                             icon: Icon(
-                              Icons.shuffle_rounded,
-                              color: _isShuffleEnabled ? const Color(0xFFE5B3B3) : Colors.white54,
+                              Icons.add_rounded,
+                              color: Colors.white54,
+                              size: 28,
                             ),
                             onPressed: () {
-                              setState(() {
-                                _isShuffleEnabled = !_isShuffleEnabled;
-                              });
+                              _showAddToPlaylistSheet(song);
                             },
                           ),
                           GestureDetector(
@@ -329,7 +437,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               ),
                               child: Icon(
                                 Icons.skip_previous_rounded,
-                                color: Theme.of(context).colorScheme.surface,
+                                color: Colors.white,
                                 size: 26,
                               ),
                             ),
@@ -349,7 +457,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                       height: 68,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Color(0xFFE5B3B3), // Accent color matching our theme
+                                        color: accentColor, // Accent color matching our theme
                                       ),
                                       child: Center(
                                         child: isLoading
@@ -358,12 +466,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                                 height: 22,
                                                 child: CircularProgressIndicator(
                                                   strokeWidth: 2.0,
-                                                  color: Theme.of(context).colorScheme.primary,
+                                                  color: Colors.black87,
                                                 ),
                                               )
                                             : Icon(
                                                 isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                                color: Theme.of(context).colorScheme.primary,
+                                                color: Colors.black87,
                                                 size: 38,
                                               ),
                                       ),
@@ -386,7 +494,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               ),
                               child: Icon(
                                 Icons.skip_next_rounded,
-                                color: Theme.of(context).colorScheme.surface,
+                                color: Colors.white,
                                 size: 26,
                               ),
                             ),
@@ -401,12 +509,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                                   final isDownloaded = DownloadService().isDownloaded(song);
                                   
                                   if (isDownloading) {
-                                    return const Padding(
-                                      padding: EdgeInsets.all(12.0),
+                                    return Padding(
+                                      padding: const EdgeInsets.all(12.0),
                                       child: SizedBox(
                                         width: 24,
                                         height: 24,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE5B3B3)),
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
                                       ),
                                     );
                                   }
@@ -445,6 +553,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
           );
         },
       ),
+        );
+      },
     );
   }
 }
@@ -470,116 +580,120 @@ class NextUpCard extends StatelessWidget {
 
     final title = nextSong['title'] ?? 'Unknown';
     final artist = nextSong['artist'] ?? 'Unknown';
-
-    return Container(
-      width: double.infinity,
-      height: 60,
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      child: Dismissible(
-        key: ValueKey(nextSong['id'] ?? title),
-        direction: DismissDirection.endToStart, // Swipe left to skip
-        onDismissed: (direction) {
-          AudioService().nextSong();
-        },
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 24.0),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE5B3B3).withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Skipping",
-                style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              SizedBox(width: 8),
-              Icon(Icons.skip_next_rounded, color: Theme.of(context).colorScheme.surface, size: 24),
-            ],
-          ),
-        ),
-        child: Container(
+    return ValueListenableBuilder<Color>(
+      valueListenable: accentColorNotifier,
+      builder: (context, accentColor, _) {
+        return Container(
           width: double.infinity,
           height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.06),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFE5B3B3).withValues(alpha: 0.12),
-                ),
-                child: Icon(
-                  Icons.queue_music_rounded,
-                  color: Color(0xFFE5B3B3),
-                  size: 16,
-                ),
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Dismissible(
+            key: ValueKey(nextSong['id'] ?? title),
+            direction: DismissDirection.endToStart, // Swipe left to skip
+            onDismissed: (direction) {
+              AudioService().nextSong();
+            },
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 24.0),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "NEXT UP",
-                      style: GoogleFonts.inter(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFFE5B3B3),
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      "$title • $artist",
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 8),
-              Row(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    "Swipe left to skip",
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: Colors.white30,
+                    "Skipping",
+                    style: TextStyle(color: Theme.of(context).colorScheme.surface, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.skip_next_rounded, color: Theme.of(context).colorScheme.surface, size: 24),
+                ],
+              ),
+            ),
+            child: Container(
+              width: double.infinity,
+              height: 60,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accentColor.withValues(alpha: 0.12),
+                    ),
+                    child: Icon(
+                      Icons.queue_music_rounded,
+                      color: accentColor,
+                      size: 16,
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_left_rounded,
-                    color: Colors.white30,
-                    size: 14,
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "NEXT UP",
+                          style: GoogleFonts.inter(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: accentColor,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          "$title • $artist",
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Swipe left to skip",
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: Colors.white30,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_left_rounded,
+                        color: Colors.white30,
+                        size: 14,
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
