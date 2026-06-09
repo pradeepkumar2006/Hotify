@@ -98,7 +98,6 @@ flutter:
     - assets/kuthu_cat.png
     - assets/melody_cat.png
     - assets/classical_cat.png
-    - assets/images/persona_explorer.png
     - assets/dsp.png
     - assets/imman.png
     - assets/sn_arunagiri.png
@@ -113,7 +112,6 @@ flutter:
     - assets/crossover_2.png
     - assets/crossover_3.png
     - assets/crossover_4.png
-    - assets/dummy_pad.bin
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
