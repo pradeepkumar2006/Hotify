@@ -2554,28 +2554,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showCreatePlaylistDialog() {
-    final count = _userPlaylists.length + 1;
-    final remainder10 = count % 10;
-    final remainder100 = count % 100;
-    String suffix = 'th';
-    if (remainder10 == 1 && remainder100 != 11) {
-      suffix = 'st';
-    } else if (remainder10 == 2 && remainder100 != 12) {
-      suffix = 'nd';
-    } else if (remainder10 == 3 && remainder100 != 13) {
-      suffix = 'rd';
-    }
-    final proposedName = '$count$suffix Playlist';
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    String? imagePath;
+    final picker = ImagePicker();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        final nameController = TextEditingController(text: proposedName);
-        final descController = TextEditingController();
-        String? imagePath;
-        final picker = ImagePicker();
 
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {

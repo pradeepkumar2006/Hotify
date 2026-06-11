@@ -24,7 +24,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.proposedName);
+    _nameController = TextEditingController();
   }
 
   @override
